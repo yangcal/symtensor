@@ -2,12 +2,12 @@ import unittest
 import numpy
 from pyscf.pbc import gto
 import pyscf.pbc.tools.pbc as tools
-import psymtensor.psymtensor as tsn
+from psymtensor import psym
 import itertools
 
-tensor = tsn.PSYMtensor
-einsum = tsn.einsum
-random = tsn.random
+tensor = psym.PSYMtensor
+einsum = psym.einsum
+random = psym.random
 backend = 'ctf'
 backend = 'numpy'
 if backend == 'numpy':

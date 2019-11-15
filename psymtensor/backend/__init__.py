@@ -6,7 +6,7 @@ def get(name):
 
     elif name=='ctf':
         from psymtensor.backend.ctf_backend import CTFbackend
-        return CTFbackend
+        return CTFbackend()
 
     else:
         raise ValueError("Backend %s not supported"%name)

@@ -121,7 +121,7 @@ class PSYMtensor:
             if shape is None:
                 self.shape = array.shape[ndim-1:]
             else:
-                assert (array.shape[ndim-1:]==shape),  "shape insistent with the input array"
+                assert (array.shape[ndim-1:]==tuple(shape)),  "shape insistent with the input array"
 
         self.array = array
         self.verbose  = verbose
@@ -151,7 +151,7 @@ class PSYMtensor:
         return PSYMtensor(self.sign_string, self.sym_range, None, self._backend, self.modulus, self.rhs, self.dtype, x)
 
 
-    def transpose(self, axes):
+    def transpose(self, *axes):
         '''transposing the tensor with specified order'''
         ndim = self.ndim
         assert (len(axes)==ndim), "number of axes does not match the number of symmetry sector"
@@ -159,6 +159,7 @@ class PSYMtensor:
         order = list(axes[:ndim-1]) + [i+ndim-1 for i in axes]
         sign_string = [self.sign_string[i] for i in axes]
         sym_range = [self.sym_range[i] for i in axes]
+
         if axes[-1] == ndim-1:
             temp = self.array.transpose(tuple(order))
         else:

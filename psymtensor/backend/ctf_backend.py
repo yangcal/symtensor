@@ -27,6 +27,10 @@ class CTFbackend:
     def rint(self, a):
         return ctf.rint(a)
 
+    def write(self, a, ind, fill):
+        a.write(ind, fill)
+        return a
+
     def to_nparray(self, a):
         return a.to_nparray()
 
@@ -35,6 +39,9 @@ class CTFbackend:
 
     def norm(self, a):
         return a.norm2()
+
+    def qr(self, a):
+        return ctf.qr(a)
 
     def dot(self,a,b):
         return ctf.dot(a,b)

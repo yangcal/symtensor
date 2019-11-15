@@ -26,6 +26,10 @@ class NUMPYbackend:
     def rint(self, a):
         return np.rint(a)
 
+    def write(self, a, ind, fill):
+        a.put(ind, fill)
+        return a
+
     def to_nparray(self, a):
         return a
 
@@ -34,6 +38,9 @@ class NUMPYbackend:
 
     def norm(self, a):
         return np.linalg.norm(a)
+
+    def qr(self, a, mode='reduced'):
+        return np.linalg.qr(a, mode)
 
     def dot(self,a,b):
         return np.dot(a,b)
