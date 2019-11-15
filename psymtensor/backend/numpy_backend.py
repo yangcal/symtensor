@@ -28,7 +28,6 @@ class NUMPYbackend:
 
     def write(self, a, ind, fill):
         a.put(ind, fill)
-        return a
 
     def to_nparray(self, a):
         return a

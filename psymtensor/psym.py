@@ -1,5 +1,5 @@
 import numpy as np
-import backend as bkd
+import psymtensor.backend as bkd
 import itertools
 from psymtensor.tools import utills
 from psymtensor.tools.params import DUMMY_STRINGS
@@ -75,7 +75,7 @@ def einsum(subscripts, op_A, op_B):
         outmodulus = op_A.modulus
         if op_A.modulus is None:
             outmodulus= op_B.modulus
-        return PSYMtensor(out_sign_string, out_range, None, op_A._backend, outmodulus, out_rhs, None, C, op_A.verbose)
+        return PSYMtensor(out_sign_string, out_range, None, op_A._backend, outmodulus, out_rhs, C, op_A.verbose)
 
 
 class PSYMtensor:
@@ -100,7 +100,7 @@ class PSYMtensor:
         array : np or ctf array
             dense array with order 2n-1 where n=len(sign_string), specify alternative to shape/dtype
     '''
-    def __init__(self, sign_string, sym_range, shape=None, backend="numpy", modulus=None, rhs=None, dtype=None, array=None, verbose=0):
+    def __init__(self, sign_string, sym_range, shape=None, backend="numpy", modulus=None, rhs=None, array=None, verbose=0):
 
         assert (len(sign_string)==len(sym_range)),  "sign string length insistent with symmetry range"
 
@@ -111,10 +111,6 @@ class PSYMtensor:
         self.modulus = modulus
         self.rhs = rhs
         self.ndim = len(sym_range)
-        if dtype is None:
-            self.dtype = np.float64
-        else:
-            self.dtype = dtype
 
         if array is not None:
             ndim = self.ndim
@@ -129,6 +125,13 @@ class PSYMtensor:
     @property
     def backend(self):
         return bkd.get(self._backend)
+
+    @property
+    def dtype(self):
+        if self.array is None:
+            return None
+        else:
+            return self.array.dtype
 
     def norm(self):
         '''compute the Frobenius norm of the tensor'''
@@ -148,7 +151,7 @@ class PSYMtensor:
         return utills.gen_irrep_map(sign_string, sym_range, modulus, rhs, self.backend)
 
     def _as_new_tensor(self, x):
-        return PSYMtensor(self.sign_string, self.sym_range, None, self._backend, self.modulus, self.rhs, self.dtype, x)
+        return PSYMtensor(self.sign_string, self.sym_range, None, self._backend, self.modulus, self.rhs, x)
 
 
     def transpose(self, *axes):
@@ -171,7 +174,7 @@ class PSYMtensor:
             irrep_map = self.get_irrep_map()
             sub = Ain + ',' + DUMMY_STRINGS[:ndim].upper() + '->' + Aout
             temp = self.backend.einsum(sub, self.array, irrep_map)
-        return PSYMtensor(sign_string, sym_range, shape, self._backend, self.modulus, self.rhs, self.dtype, temp)
+        return PSYMtensor(sign_string, sym_range, shape, self._backend, self.modulus, self.rhs, temp)
 
     def diagonal(self, preserve_shape=False):
         '''get the diagonal component for tensor with two symmetry sectors, if fill, will return the matrix with diagonal components'''
@@ -182,7 +185,7 @@ class PSYMtensor:
                 temp = self.backend.einsum('kij,ij->kij',self.array, p)
                 return self._as_new_tensor(temp)
             else:
-                temp = backend.einsum('kii->ki', self.array)
+                temp = self.backend.einsum('kii->ki', self.array)
                 return temp
         else:
             raise NotImplementedError()
@@ -237,7 +240,8 @@ class PSYMtensor:
 
     def __getitem__(self, key):
         temp = self.array[key]
-        if temp.ndim == self.array.ndim:
+        ndim = self.ndim
+        if temp.ndim == self.array.ndim and temp.shape[:ndim-1]==self.array.shape[:ndim-1]:
             return self._as_new_tensor(self.array[key])
         else:
             return temp
@@ -282,7 +286,7 @@ def zeros(sign_string, sym_range, shape, backend='numpy', modulus=None, rhs=None
         raise ValueError("Shape inconsistent with symmetry sector")
     func = bkd.get(backend)
     dat = func.zeros(full_shape, dtype=dtype)
-    return PSYMtensor(sign_string, sym_range, None, backend, modulus, rhs, dtype, dat, verbose)
+    return PSYMtensor(sign_string, sym_range, None, backend, modulus, rhs, dat, verbose)
 
 def random(sign_string, sym_range, shape, backend='numpy', modulus=None, rhs=None, verbose=0):
     '''FIXME: match order of params appearing in __init__ above'''
@@ -294,7 +298,7 @@ def random(sign_string, sym_range, shape, backend='numpy', modulus=None, rhs=Non
         raise ValueError("Shape inconsistent with symmetry sector")
     func = bkd.get(backend)
     dat = func.random(full_shape)
-    rand = PSYMtensor(sign_string, sym_range, None, backend, modulus, rhs, None, dat, verbose) #enforce symmetry in rand
+    rand = PSYMtensor(sign_string, sym_range, None, backend, modulus, rhs, dat, verbose) #enforce symmetry in rand
     rand.enforce_sym()
     return rand
 

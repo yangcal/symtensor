@@ -46,6 +46,13 @@ class CTFbackend:
     def dot(self,a,b):
         return ctf.dot(a,b)
 
+    def write(self, a, ind, fill):
+        from psymtensor.tools.mpi_tools import rank
+        if rank==0:
+            a.write(ind, fill)
+        else:
+            a.write([],[])
+
     def __getattr__(self, attr):
         try:
             result = getattr(ctf, attr)
