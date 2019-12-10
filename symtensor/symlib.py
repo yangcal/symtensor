@@ -178,7 +178,6 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
     res_B = set(s_B) - set(contracted)
     delta_strings = [s_A, s_B]
     delta_tensor = [symlib.get_irrep_map(sym1), symlib.get_irrep_map(sym2)]
-
     if len(contracted) > 1 and len(res_A)>1 and len(res_B)>1:
         # when more than two symmetry sectors are contracted out and the delta does not exist, auxillary index iss generated
         s_q = ''.join(contracted) + 'Q'
@@ -254,7 +253,7 @@ class SYMLIB:
             self.sym_lst.append(sym)
             irrep_map = sym_to_irrep_map(sym, self.backend)
             self.irrep_map_lst.append(irrep_map)
-
+        return self
     def __add__(self, symlib2):
         return fuse_symlib(self, symlib2)
 

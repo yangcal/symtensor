@@ -43,19 +43,15 @@ def _transform(Aarray, path, orb_label, lib):
         Aarray = lib.einsum(subscript, Aarray, irrep_map)
     return Aarray
 
-def symeinsum(subscripts, *operands, **kwargs):
-    op_A = operands[0]
+def symeinsum(subscripts, op_A, op_B, symlib=None):
     lib = op_A.lib
-    symlib = getattr(kwargs, 'symlib', None)
     if op_A.sym is None:
         # for non-symmetric tensor, no symmetry transformation is needed
-        out = lib.einsum(subscripts, *operands)
+        out = lib.einsum(subscripts, op_A, op_B)
         outsym = None
         return SYMtensor(out, outsym, op_A.backend)
-
-    elif len(operands)==2:
+    else:
         # two operand contraction supported
-        op_A, op_B = operands
         if op_A.sym[3] is not None and op_B.sym[3] is not None:
             # modulus needs to the same for the two operands
             assert(np.allclose(op_A.sym[3], op_B.sym[3]))
@@ -94,8 +90,8 @@ def symeinsum(subscripts, *operands, **kwargs):
             C.symlib = symlib
             return C
 
-    else:
-        raise NotImplementedError
+    #else:
+    #    raise NotImplementedError
 
 class SYMtensor:
     def __init__(self, array, sym=None, backend=BACKEND):
