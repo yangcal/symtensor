@@ -5,8 +5,8 @@ from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills
 import itertools
 import numpy as np
-
 BACKEND='numpy'
+backend = load_lib(BACKEND)
 
 def get_full_shape(shape, sym):
     if sym is None:
@@ -47,9 +47,14 @@ def symeinsum(subscripts, op_A, op_B, symlib=None):
     lib = op_A.lib
     if op_A.sym is None:
         # for non-symmetric tensor, no symmetry transformation is needed
-        out = lib.einsum(subscripts, op_A, op_B)
+        if '->' not in subscripts:
+            subscripts += '->'
+        out = lib.einsum(subscripts, op_A.array, op_B.array)
         outsym = None
-        return SYMtensor(out, outsym, op_A.backend)
+        if subscripts[-2:]=='->':
+            return out
+        else:
+            return SYMtensor(out, outsym, op_A.backend)
     else:
         # two operand contraction supported
         if op_A.sym[3] is not None and op_B.sym[3] is not None:
@@ -82,7 +87,6 @@ def symeinsum(subscripts, op_A, op_B, symlib=None):
             main_subscript = utills.make_subscript(main_sym_label, string_lst, full=False)
             C = lib.einsum(main_subscript, A, B)
             C = _transform(C, C_path, s_C, lib)
-
         if out_sym is None:
             return C
         else:
@@ -95,8 +99,8 @@ def symeinsum(subscripts, op_A, op_B, symlib=None):
 
 class SYMtensor:
     def __init__(self, array, sym=None, backend=BACKEND):
-
-        assert (len(sym[0])==len(sym[1])),  "sign string length insistent with symmetry range"
+        if sym is not None:
+            assert (len(sym[0])==len(sym[1])),  "sign string length insistent with symmetry range"
         self.array = array
         self.sym = sym
         self.backend = backend
@@ -157,7 +161,13 @@ class SYMtensor:
 
     def diagonal(self, preserve_shape=False):
         '''get the diagonal component for tensor with two symmetry sectors, if fill, will return the matrix with diagonal components'''
-        if self.ndim ==2 and self.shape[-1]==self.shape[-2]:
+        lib = self.lib
+        if self.ndim == self.array.ndim:
+            if preserve_shape:
+                return SYMtensor(lib.diag(lib.diag(self.array)), self.sym, self.backend)
+            else:
+                return lib.diag(self.array)
+        elif self.ndim ==2 and self.shape[-1]==self.shape[-2]:
             length = self.shape[-1]
             if preserve_shape:
                 p = self.lib.eye(length)
@@ -235,7 +245,7 @@ class SYMtensor:
     def __setitem__(self, key, value):
         self.array[key] = value
 
-    def write_all(self, idx, val):
+    def write(self, idx, val):
         self.lib.write_all(self.array, idx, val)
 
     def write_local(self, idx, val):

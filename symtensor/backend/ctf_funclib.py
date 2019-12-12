@@ -13,6 +13,11 @@ class Logger(logger.Logger):
         else:
             logger.Logger.__init__(self, stdout, 0)
 
+def static_partition(tasks):
+    segsize = (len(tasks)+size-1) // size
+    start = rank * segsize
+    stop = min(len(tasks), start+segsize)
+    return tasks[start:stop]
 
 NAME='ctf'
 einsum = ctf.einsum
@@ -26,6 +31,7 @@ random = ctf.random.random
 dot = ctf.dot
 qr = ctf.qr
 diag = ctf.diag
+eye = ctf.eye
 def non_zeros(a):
     return a.read_all_nnz()[0]
 

@@ -1,5 +1,5 @@
 import numpy as np
-
+from pyscf.lib.logger import Logger
 BACKEND = 'numpy'
 
 einsum = np.einsum
@@ -13,6 +13,7 @@ norm = np.linalg.norm
 qr = np.linalg.qr
 dot = np.dot
 diag = np.diag
+eye = np.eye
 
 def non_zeros(a):
     idx = np.where(a.ravel()!=0)
