@@ -1,9 +1,7 @@
 import numpy as np
 import itertools
-import psymtensor.backend as bkd
-from psymtensor.tools.params import sign, SYM_TOL
-#sign = {'+':1, '-':-1}
-#SYM_TOL = 1e-8
+sign = {'+':1, '-':-1}
+SYM_TOL = 1e-8
 
 def count_indep_vars(string_lst):
     '''Compute the number of independent variables from a list of strings'''

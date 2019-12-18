@@ -8,7 +8,7 @@ import pyscf.pbc.tools.pbc as tools
 cell = gto.M(a = np.eye(3)*5,atom = '''He 0 0 0''',basis = 'gth-szv',verbose=0)
 kpts = cell.make_kpts([2,2,1]) + np.random.random([1,3])
 gvec = cell.reciprocal_vectors()
-nkpts, nocc, nvir = len(kpts), 5, 8
+nkpts, nocc, nvir = len(kpts), 3, 5
 kconserv = tools.get_kconserv(cell, kpts)
 thresh = 1e-6
 kshift=2

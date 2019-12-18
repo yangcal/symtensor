@@ -1,6 +1,6 @@
-import ctf
 from pyscf.lib import logger
 from mpi4py import MPI
+import ctf
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()

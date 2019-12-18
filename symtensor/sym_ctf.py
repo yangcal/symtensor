@@ -1,10 +1,10 @@
 from functools import wraps
 from symtensor import sym
 from symtensor.settings import load_lib
-import ctf
 
 BACKEND='ctf'
 backend = load_lib(BACKEND)
+import ctf
 def ctf_wrapper(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
