@@ -14,7 +14,8 @@ qr = np.linalg.qr
 dot = np.dot
 diag = np.diag
 eye = np.eye
-
+hstack = np.hstack
+vstack = np.vstack
 def non_zeros(a):
     idx = np.where(a.ravel()!=0)
     return idx[0]
@@ -25,7 +26,7 @@ def write_all(a, ind, fill):
     a.put(ind, fill)
     return a
 
-write_single = write_all
+write = write_single = write_all
 
 def to_nparray(a):
     return a

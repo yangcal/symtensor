@@ -27,7 +27,8 @@ empty = ctf.empty
 ones = ctf.ones
 rint = ctf.rint
 random = ctf.random.random
-
+hstack = ctf.hstack
+vstack = ctf.vstack
 dot = ctf.dot
 qr = ctf.qr
 diag = ctf.diag
@@ -48,7 +49,7 @@ def write_single(a, ind, fill):
     else:
         a.write([],[])
     return a
-
+write = write_all
 def to_nparray(a):
     return a.to_nparray()
 

@@ -142,7 +142,7 @@ class SYMtensor:
             temp = self.array.transpose(axes)
             new_sym = None
         else:
-            sign_strings = [self.sym[0][i] for i in axes]
+            sign_strings = ''.join([self.sym[0][i] for i in axes])
             sym_range = [self.sym[1][i] for i in axes]
             order = list(axes[:ndim-1]) + [i+ndim-1 for i in axes]
             new_sym = [sign_strings, sym_range, self.sym[2], self.sym[3]]
