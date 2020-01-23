@@ -92,7 +92,14 @@ def pre_processing(string_lst, symA, symB):
         else:
             sign_string += symB[0][idxb]
             sym_range.append(symB[1][idxb])
-    out_sym = (sign_string, sym_range, rhs, symA[3])
+    if symA[3] is None:
+        out_mod = symB[3]
+    elif symB[3] is None:
+        out_mod = symA[3]
+    else:
+        assert(np.allclose(symA[3],symB[3]))
+        out_mod = symA[3]
+    out_sym = (sign_string, sym_range, rhs, out_mod)
     return out_sym
 
 def enumerate_rep(sym_label, delta_strings, force_out=None):
