@@ -109,7 +109,21 @@ def get_aux_sym_range(sym, idx, phase=1):
     aux_range = merge_sym_range(out_left, out_right)
     return aux_range
 
-def merge_sym_range(range_A, range_B):
+def merge_sym_range(range_A, range_B, modulus1=None, modulus2=None):
+    '''In cases when only one tensor has moduli, symmetry ranges needs to be folded'''
+    if modulus1 is None and modulus2 is None:
+        return _merge_sym_range(range_A, range_B)
+    elif modulus1 is not None and modulus2 is not None:
+        assert(np.allclose(modulus1, modulus2))
+        return _merge_sym_range(range_A, range_B)
+    elif modulus1 is None and modulus2 is not None:
+        rA = fold_sym_range(range_A, modulus2)
+        return _merge_sym_range(range_B, r_A)
+    else:
+        rB = fold_sym_range(range_B, modulus1)
+        return _merge_sym_range(range_A, rB)
+
+def _merge_sym_range(range_A, range_B):
     delta = abs(np.asarray(range_A)[:,None]-np.asarray(range_B)[None:])
     if delta.ndim !=2:
         delta = np.sum(delta, axis=2)
@@ -190,7 +204,7 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
             phase = 1
         auxa = get_aux_sym_range(sym1, idxa)
         auxb = get_aux_sym_range(sym2, idxb, phase)
-        aux_range = merge_sym_range(auxa, auxb)
+        aux_range = merge_sym_range(auxa, auxb, modulus1, modulus2)
         # when auxillary range is different from the two tensors, pick the shared one for most compact representation
         sign_string = ''.join([sym1[0][i] for i in idxa]) + '-'
         sym_range = [sym1[1][i] for i in idxa]
