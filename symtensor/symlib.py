@@ -278,7 +278,6 @@ class SYMLIB:
             if EQUAL:
                 SYM_INCLUDED=True
                 break
-
         if SYM_INCLUDED:
             if order is None:
                 return self.irrep_map_lst[idx]
@@ -322,9 +321,9 @@ if __name__=='__main__':
     from symtensor.sym import symeinsum as einsum
     Aarray = np.random.random([nkpts,nkpts,nkpts,nocc,nocc,nvir,nvir])
     Barray = np.random.random([nkpts,nkpts,nkpts,nvir,nvir,nvir,nvir])
-    A  = tensor(Aarray, sym1, backend)
-    B  = tensor(Barray, sym1, backend)
-    C = einsum('ijab,abcd->ijcd', A, B, symlib=symlib)
+    A  = tensor(Aarray, sym1, backend, symlib)
+    B  = tensor(Barray, sym1, backend, symlib)
+    C = einsum('ijab,abcd->ijcd', A, B)
     Carray = np.zeros([nkpts,nkpts,nkpts,nocc,nocc,nvir,nvir])
     for ki,kj,ka,kc in itertools.product(range(nkpts), repeat=4):
         kb = kconserv[ki,ka,kj]
@@ -332,5 +331,3 @@ if __name__=='__main__':
         Carray[ki,kj,kc] += np.einsum('ijab,abcd->ijcd', Aarray[ki,kj,ka], Barray[ka,kb,kc])
 
     print(np.linalg.norm(Carray-C.array))
-
-    #print(C.array.shape)

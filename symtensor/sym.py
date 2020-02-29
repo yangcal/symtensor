@@ -15,17 +15,17 @@ def get_full_shape(shape, sym):
         full_shape = [len(i) for i in sym[1][:-1]] + list(shape)
         return tuple(full_shape)
 
-def zeros(shape, dtype=float, sym=None, backend=BACKEND):
+def zeros(shape, dtype=float, sym=None, backend=BACKEND, symlib=None):
     lib = load_lib(backend)
     full_shape = get_full_shape(shape, sym)
     array = lib.zeros(full_shape, dtype)
-    return SYMtensor(array, sym, backend)
+    return SYMtensor(array, sym, backend, symlib)
 
-def random(shape, sym=None, backend=BACKEND):
+def random(shape, sym=None, backend=BACKEND, symlib=None):
     lib = load_lib(backend)
     full_shape = get_full_shape(shape, sym)
     array = lib.random(full_shape)
-    tensor = SYMtensor(array, sym, backend)
+    tensor = SYMtensor(array, sym, backend, symlib)
     tensor.enforce_sym()
     return tensor
 
@@ -43,7 +43,7 @@ def _transform(Aarray, path, orb_label, lib):
         Aarray = lib.einsum(subscript, Aarray, irrep_map)
     return Aarray
 
-def symeinsum(subscripts, op_A, op_B, symlib=None):
+def symeinsum(subscripts, op_A, op_B):
     lib = op_A.lib
     if op_A.sym is None:
         # for non-symmetric tensor, no symmetry transformation is needed
@@ -61,8 +61,7 @@ def symeinsum(subscripts, op_A, op_B, symlib=None):
             # modulus needs to the same for the two operands
             assert(np.allclose(op_A.sym[3], op_B.sym[3]))
 
-        if symlib is None:
-            symlib = op_A.symlib + op_B.symlib
+        symlib = op_A.symlib + op_B.symlib
 
         if 'q' in subscripts.lower():
             raise ValueError("q index is reserved for auxillary index, please change the symmetry label in einsum subscript")
@@ -87,31 +86,36 @@ def symeinsum(subscripts, op_A, op_B, symlib=None):
             main_subscript = utills.make_subscript(main_sym_label, string_lst, full=False)
             C = lib.einsum(main_subscript, A, B)
             C = _transform(C, C_path, s_C, lib)
+
+        op_A.symlib = op_B.symlib = symlib 
         if out_sym is None:
             return C
         else:
-            C = SYMtensor(C, out_sym, op_A.backend)
-            C.symlib = symlib
+            C = SYMtensor(C, out_sym, op_A.backend, symlib)
             return C
 
     #else:
     #    raise NotImplementedError
 
 class SYMtensor:
-    def __init__(self, array, sym=None, backend=BACKEND):
+    def __init__(self, array, sym=None, backend=BACKEND, symlib=None):
         if sym is not None:
             assert (len(sym[0])==len(sym[1])),  "sign string length insistent with symmetry range"
         self.array = array
         self.sym = sym
         self.backend = backend
         if sym is None:
-            self.symlib = None
+            self.symlib = symlib
             self.ndim = self.array.ndim
             self.shape = self.array.shape
         else:
-            self.symlib = SYMLIB(self.backend)
             self.ndim = (self.array.ndim+1) //2
             self.shape  = self.array.shape[self.ndim-1:]
+            if symlib is None:
+                self.symlib = SYMLIB(self.backend)
+            else:
+                self.symlib = symlib
+       
 
     @property
     def lib(self):
@@ -131,7 +135,7 @@ class SYMtensor:
 
 
     def _as_new_tensor(self, x):
-        newtensor = SYMtensor(x, self.sym, self.backend)
+        newtensor = SYMtensor(x, self.sym, self.backend, self.symlib)
         return newtensor
 
     def transpose(self, *axes):
@@ -157,14 +161,14 @@ class SYMtensor:
                 irrep_map = self.get_irrep_map()
                 sub = Ain + ',' + DUMMY_STRINGS[:ndim].upper() + '->' + Aout
                 temp = self.lib.einsum(sub, self.array, irrep_map)
-        return SYMtensor(temp, new_sym, self.backend)
+        return SYMtensor(temp, new_sym, self.backend, self.symlib)
 
     def diagonal(self, preserve_shape=False):
         '''get the diagonal component for tensor with two symmetry sectors, if fill, will return the matrix with diagonal components'''
         lib = self.lib
         if self.ndim == self.array.ndim:
             if preserve_shape:
-                return SYMtensor(lib.diag(lib.diag(self.array)), self.sym, self.backend)
+                return SYMtensor(lib.diag(lib.diag(self.array)), self.sym, self.backend, self.symlib)
             else:
                 return lib.diag(self.array)
         elif self.ndim ==2 and self.shape[-1]==self.shape[-2]:

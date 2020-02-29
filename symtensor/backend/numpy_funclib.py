@@ -1,5 +1,4 @@
 import numpy as np
-from pyscf.lib.logger import Logger
 BACKEND = 'numpy'
 
 einsum = np.einsum
