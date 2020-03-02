@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
+'''
+Symlib, internal object for generating delta tensors
+'''
+
 from symtensor.settings import load_lib
 from symtensor.tools import utills
 import itertools
@@ -297,37 +305,3 @@ class SYMLIB:
 
     def check_sym_equal(self, sym1, sym2):
         return check_sym_equal(sym1, sym2)
-
-if __name__=='__main__':
-    from pyscf.pbc import gto
-    import pyscf.pbc.tools.pbc as tools
-    import ctf
-    cell = gto.M(a = np.eye(3)*5,atom = '''He 0 0 0''',basis = 'gth-szv',verbose=0)
-    kpts = cell.make_kpts([2,2,2]) + np.random.random([1,3])
-    gvec = cell.reciprocal_vectors()
-    kconserv = tools.get_kconserv(cell, kpts)
-    nkpts = len(kpts)
-    backend = 'numpy'
-
-    sym1 = ['++--', [kpts,]*4, None, gvec]
-    sym2 = ['++-', [kpts,]*3, kpts[0], gvec]
-    sym3 = ['+-+-', [kpts,]*4, None, gvec]
-    sym4 = ['+-', [kpts,]*2, None, gvec]
-
-
-    symlib = SYMLIB(backend)
-    nocc, nvir = 4, 6
-    from symtensor.sym import SYMtensor as tensor
-    from symtensor.sym import symeinsum as einsum
-    Aarray = np.random.random([nkpts,nkpts,nkpts,nocc,nocc,nvir,nvir])
-    Barray = np.random.random([nkpts,nkpts,nkpts,nvir,nvir,nvir,nvir])
-    A  = tensor(Aarray, sym1, backend, symlib)
-    B  = tensor(Barray, sym1, backend, symlib)
-    C = einsum('ijab,abcd->ijcd', A, B)
-    Carray = np.zeros([nkpts,nkpts,nkpts,nocc,nocc,nvir,nvir])
-    for ki,kj,ka,kc in itertools.product(range(nkpts), repeat=4):
-        kb = kconserv[ki,ka,kj]
-        kd = kconserv[ki,kc,kj]
-        Carray[ki,kj,kc] += np.einsum('ijab,abcd->ijcd', Aarray[ki,kj,ka], Barray[ka,kb,kc])
-
-    print(np.linalg.norm(Carray-C.array))

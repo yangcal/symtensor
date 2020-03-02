@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
 from functools import wraps
 
 def load_lib(libname):
@@ -8,5 +12,3 @@ def load_lib(libname):
     else:
         raise ValueError("Library %s not recognized" %libname)
     return lib
-
-

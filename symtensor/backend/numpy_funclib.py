@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
+"""Numpy backend for Symtensor"""
+
 import numpy as np
 BACKEND = 'numpy'
 

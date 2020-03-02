@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
 import numpy as np
 import itertools
 sign = {'+':1, '-':-1}

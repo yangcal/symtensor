@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
+"""CTF backend for Symtensor"""
 from mpi4py import MPI
 import ctf
 

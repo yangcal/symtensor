@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
+'''
+Symtensor with ctf as backend
+'''
 from functools import wraps
 from symtensor import sym
 from symtensor.settings import load_lib

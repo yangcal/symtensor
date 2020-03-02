@@ -1,15 +1,49 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
 import unittest
 import numpy as np
-from symtensor.symlib import SYMLIB
 from symtensor.sym import random, einsum, core_einsum
-from pyscf.pbc import gto
-import pyscf.pbc.tools.pbc as tools
 
-cell = gto.M(a = np.eye(3)*5,atom = '''He 0 0 0''',basis = 'gth-szv',verbose=0)
-kpts = cell.make_kpts([2,2,1]) + np.random.random([1,3])
-gvec = cell.reciprocal_vectors()
+def make_kpts(lattice, nmp):
+    ks_each_axis = []
+    for n in nmp:
+        ks = np.arange(n, dtype=float) / n
+        ks_each_axis.append(ks)
+    arrays = [np.asarray(x) for x in ks_each_axis]
+    nd = len(arrays)
+    dims = [nd] + [len(x) for x in arrays]
+    out = np.ndarray(dims)
+    shape = [-1] + [1] * nd
+    for i, arr in enumerate(arrays):
+        out[i] = arr.reshape(shape[:nd-i])
+    scaled_kpts = out.reshape(nd,-1).T
+    gvec = get_reciprocal_vectors(lattice)
+    kpts = np.dot(scaled_kpts, gvec)
+    return kpts
+
+def get_reciprocal_vectors(lattice):
+    b = np.linalg.inv(lattice.T)
+    return 2*np.pi * b
+
+def get_kconserv(lattice, kpts):
+    nkpts = kpts.shape[0]
+    a = lattice / (2*np.pi)
+    kconserv = np.zeros((nkpts,nkpts,nkpts), dtype=int)
+    kvKLM = kpts[:,None,None,:] - kpts[:,None,:] + kpts
+    for N, kvN in enumerate(kpts):
+        kvKLMN = np.einsum('wx,klmx->wklm', a, kvKLM - kvN, optimize=True)
+        kvKLMN_int = np.rint(kvKLMN)
+        mask = np.einsum('wklm->klm', abs(kvKLMN - kvKLMN_int)) < 1e-9
+        kconserv[mask] = N
+    return kconserv
+
+lattice = np.eye(3)*5
+kpts = make_kpts(lattice, [2,2,1])
+gvec = get_reciprocal_vectors(lattice)
 nkpts, nocc, nvir = len(kpts), 3, 5
-kconserv = tools.get_kconserv(cell, kpts)
+kconserv = get_kconserv(lattice, kpts)
 thresh = 1e-6
 kshift=2
 sym_phys = ['++--', [kpts,]*4, None, gvec]
@@ -17,7 +51,6 @@ sym_chem = ['+-+-', [kpts,]*4, None, gvec]
 sym_t1 = ['+-',[kpts,]*2, None, gvec]
 sym_eom = ['++-', [kpts,]*3, kpts[kshift], gvec]
 sym_s = ['+', [kpts], kpts[kshift], gvec]
-symlib = SYMLIB('numpy')#.update(sym_phys, sym_chem, sym_t1, sym_eom, sym_s)
 
 class PBCNUMPYTest(unittest.TestCase):
 

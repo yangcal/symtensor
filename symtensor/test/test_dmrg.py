@@ -1,10 +1,12 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
+
 import unittest
 import numpy
 from symtensor import symlib
 from symtensor.sym import random, einsum, core_einsum
-
-
-
 
 thresh = 1e-8
 sign = {'+':1, '-':-1}

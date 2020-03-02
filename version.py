@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+#
+# Author: Yang Gao <younggao1994@gmail.com>
+#
+
 """
 This module imports the version number.
 """
