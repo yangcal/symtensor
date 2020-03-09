@@ -47,10 +47,16 @@ def zeros_like(a, dtype=None):
     return a._as_new_tensor(array)
 
 def _transform(Aarray, path, orb_label, lib):
-    for ipath in path:
-        sym_label, irrep_map = ipath
-        subscript = utills.make_subscript(sym_label, [orb_label, '', orb_label], full=False)
-        Aarray = lib.einsum(subscript, Aarray, irrep_map)
+    nop = len(path)
+    if nop == 0: return Aarray
+    symstring, irreps = [], []
+    for ki, (sym_label, irrep_map) in enumerate(path):
+        if ki ==0: symstring += [sym_label[0]]
+        symstring += sym_label[1:-1]
+        if ki == nop -1: symstring += [sym_label[-1]]
+        irreps.append(irrep_map)
+    subscript = utills.make_subscript(symstring, [orb_label]+['']*(len(symstring)-2)+[orb_label], full=False)
+    Aarray = lib.einsum(subscript, Aarray, *irreps)
     return Aarray
 
 def symeinsum(subscripts, op_A, op_B):
@@ -87,15 +93,19 @@ def symeinsum(subscripts, op_A, op_B):
         out_sym = utills.pre_processing(string_lst, op_A.sym, op_B.sym)
         cput1 = logger.timer_debug(op_A, "pre-processing", *cput1)
         A, B = op_A.array, op_B.array
-
         Nind = utills.count_indep_vars(sym_string_lst)
         if utills.is_direct(sym_string_lst, Nind):
             main_subscript = utills.make_subscript(sym_string_lst, string_lst)
             C = lib.einsum(main_subscript, A, B)
             logger.timer(op_A, "main contraction %s"%main_subscript, *cput1)
         else:
+            bond_dict = {}
+            shape = list(op_A.shape) + list(op_B.shape)
+            symbols = s_A + s_B
+            for ki, i in enumerate(symbols.upper()):
+                bond_dict[i] = shape[ki]
             irrep_map_lst = symlib.make_irrep_map_lst(op_A.sym, op_B.sym, sym_string_lst) # generate all irrep_maps
-            A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind)
+            A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind, bond_dict)
             cput1 = logger.timer_debug(op_A, "finding contraction path", *cput1)
             A = _transform(A, A_path, s_A, lib)
             cput1 = logger.timer_debug(op_A, "transforming input %s"%s_A, *cput1)

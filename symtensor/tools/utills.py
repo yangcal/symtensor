@@ -177,7 +177,7 @@ def estimate_cost(symlist, dic):
         count *= dic[i]
     return count
 
-def find_path(sym_labels, delta_lst, Nind):
+def find_path(sym_labels, delta_lst, Nind, bond_dict):
     '''find the transformation and contraction path for all tensors'''
     delta_strings, delta_tensors = delta_lst
     dic = make_dict(delta_strings, delta_tensors)
@@ -190,6 +190,10 @@ def find_path(sym_labels, delta_lst, Nind):
     tab = []
     counter = []
     cost_tab = []
+    memA_base = estimate_cost(s_A, bond_dict)
+    memB_base = estimate_cost(s_B, bond_dict)
+    memC_base = estimate_cost(s_C, bond_dict)
+    memcounter = []
     for a,b,c in itertools.product(a_reps, b_reps, c_reps):
         good_to_contract = is_direct([a[0],b[0],c[0]], Nind, full=False)
         if not good_to_contract: continue
@@ -197,14 +201,13 @@ def find_path(sym_labels, delta_lst, Nind):
         B_path = unfold_path(b, b_reps, delta_lst)
         main_subscript = [a[0],b[0],c[0]]
         C_path = unfold_path(c, c_reps, delta_lst, reverse=True)
-        cost = estimate_cost(main_subscript, dic)
-        cost_tab.append(cost)
+        memA = estimate_cost(a[0], dic) * memA_base * (len(A_path) - 1)
+        memB = estimate_cost(b[0], dic) * memB_base * (len(B_path) - 1)
+        memC = estimate_cost(c[0], dic) * memC_base * (len(C_path) - 1)
+        mem = memA + memB + memC
+        memcounter.append(mem)
         tab.append([A_path, B_path, main_subscript, C_path])
-        counter.append(a[3]+b[3]+c[3])
-    idx = counter.index(min(counter))
-    nunique = len(set(cost_tab))
-    if nunique !=1:
-        idx = cost_tab.index(min(cost_tab))
+    idx = memcounter.index(min(memcounter))
     full_path = tab[idx]
     return full_path
 
