@@ -227,7 +227,6 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
         sign_string = ''.join([sym1_[0][i] for i in idxa]) + '-'
         sym_range = [sym1[1][i] for i in idxa]
         sym_range.append(aux_range)
-        print(aux_range)
         aux_sym = [sign_string, sym_range, None, sym1[3]]
         delta_tensor.append(symlib.get_irrep_map(aux_sym))
     delta_lst = fuse_delta([delta_strings, delta_tensor], symlib.backend)
