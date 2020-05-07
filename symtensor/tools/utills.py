@@ -57,21 +57,42 @@ def is_direct(sym_lst, Nind, full=True):
     _direct = (len(input)==Nind and output.issubset(input))
     return _direct
 
+def _cut_non_sym_sec(sym):
+    if sym is None or '0' not in sym[0]: return sym
+    symbol = sym[0]
+    new_symbol = symbol.replace('0','')
+    assert(len(new_symbol)==len(sym[1])), "sign string length insistent with symmetry range"
+    new_sym = [new_symbol,] + sym[1:]
+    return tuple(new_sym)
+
+def _cut_non_sym_symbol(string, symbol):
+    if symbol is None: return string
+    new_string = ''
+    for ki, i in enumerate(string):
+        if symbol[ki]!='0':
+            new_string += i
+    return new_string
+
 def pre_processing(string_lst, symA, symB):
     """compute the output symmetry from the contraction of symA and symB
     """
     s_A, s_B, s_C = string_lst
-    if s_C == '':
-        return None
+    if s_C == '':   return None
+    sA_ = _cut_non_sym_symbol(s_A, symA[0])
+    sB_ = _cut_non_sym_symbol(s_B, symB[0])
+    symA_ = _cut_non_sym_sec(symA)
+    symB_ = _cut_non_sym_sec(symB)
+
     rhs_A, rhs_B = symA[2], symB[2]
     if rhs_A is None: rhs_A = 0
-    if rhs_B is None: rhs_B  = 0
+    if rhs_B is None: rhs_B = 0
     contracted = sorted(''.join(set(s_A) & set(s_B)))
     phase = []
-    FLIP = {'+':'-','-':'+'}
+    FLIP = {'+':'-','-':'+','0':'0'}
     for i in contracted:
-        idxa, idxb = s_A.find(i), s_B.find(i)
-        if symA[0][idxa]==symB[0][idxb]:
+        idxa, idxb = sA_.find(i), sB_.find(i)
+        if idxa == idxb == -1: continue
+        if symA_[0][idxa]==symB_[0][idxb]:
             phase.append(-1) #flip the sign of the equation
         else:
             phase.append(1)
@@ -92,10 +113,15 @@ def pre_processing(string_lst, symA, symB):
         idxa, idxb = s_A.find(i), s_B.find(i)
         if idxa != -1:
             sign_string += sign_stringa[idxa]
-            sym_range.append(symA[1][idxa])
         else:
             sign_string += symB[0][idxb]
-            sym_range.append(symB[1][idxb])
+        if i not in sA_ + sB_: continue
+        idxa, idxb = sA_.find(i), sB_.find(i)
+        if idxa!= -1:
+            sym_range.append(symA_[1][idxa])
+        else:
+            sym_range.append(symB_[1][idxb])
+
     if symA[3] is None:
         out_mod = symB[3]
     elif symB[3] is None:
@@ -103,7 +129,7 @@ def pre_processing(string_lst, symA, symB):
     else:
         assert(np.allclose(symA[3],symB[3]))
         out_mod = symA[3]
-    out_sym = (sign_string, sym_range, rhs, out_mod)
+    out_sym = [sign_string, sym_range, rhs, out_mod]
     return out_sym
 
 def enumerate_rep(sym_label, delta_strings, force_out=None):

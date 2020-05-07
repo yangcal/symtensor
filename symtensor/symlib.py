@@ -8,6 +8,7 @@ Symlib, internal object for generating delta tensors
 
 from symtensor.settings import load_lib
 from symtensor.tools import utills
+from symtensor.misc import DUMMY_STRINGS
 import itertools
 import numpy as np
 import copy
@@ -18,7 +19,7 @@ sign = {'+':1,'-':-1}
 def sym_to_irrep_map(sym, backend):
     lib = load_lib(backend)
     rank = getattr(lib, "rank", 0)
-    sign_string, sym_range, rhs, modulus = sym
+    sign_string, sym_range, rhs, modulus = utills._cut_non_sym_sec(sym)
     shape = [len(i) for i in sym_range]
     delta = lib.zeros(shape)
     if isinstance(sym_range[0][0], int):
@@ -87,8 +88,15 @@ def fold_sym_range(sym_range, modulus):
 
 def get_aux_sym_range(sym, idx, phase=1):
     """compute the range for the auxillary index based on two sides of algebraic equations for the given indices"""
-    sign_string, sym_range, rhs, modulus = sym
-    left_idx, right_idx = idx, [i for i in range(len(sym_range)) if i not in idx]
+    sign_string, sym_range, rhs, modulus = utills._cut_non_sym_sec(sym)
+
+    sA = DUMMY_STRINGS[:len(sym[0])]
+    sA_ = utills._cut_non_sym_symbol(sA, sym[0])
+    new_idx =  []
+    for i in idx:
+        if sym[0][i] == '0': continue
+        new_idx.append(sA_.find(sA[i]))
+    left_idx, right_idx = new_idx, [i for i in range(len(sym_range)) if i not in new_idx]
     nleft, nright = len(left_idx), len(right_idx)
     out_left, out_right = [0,]*2
     if isinstance(sym_range[0][0], int):
@@ -140,8 +148,8 @@ def _merge_sym_range(range_A, range_B):
     return merged_range
 
 def check_sym_equal(sym1, sym2):
-    sign_string1, sym_range1, rhs1, modulus1 = sym1
-    sign_string2, sym_range2, rhs2, modulus2 = sym2
+    sign_string1, sym_range1, rhs1, modulus1 = utills._cut_non_sym_sec(sym1)
+    sign_string2, sym_range2, rhs2, modulus2 = utills._cut_non_sym_sec(sym2)
     if rhs1 is None: rhs1 = 0
     if rhs2 is None: rhs2 = 0
 
@@ -191,32 +199,35 @@ def fuse_symlib(symlib1, symlib2):
     return fused_lib
 
 def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
-    sign_string1, sym_range1, rhs1, modulus1 = sym1
-    sign_string2, sym_range2, rhs2, modulus2 = sym2
+    sym1_ = utills._cut_non_sym_sec(sym1)
+    sym2_ = utills._cut_non_sym_sec(sym2)
+    sign_string1, sym_range1, rhs1, modulus1 = sym1_
+    sign_string2, sym_range2, rhs2, modulus2 = sym2_
     s_A, s_B, s_C = sym_string_lst
 
     contracted = sorted(set(s_A) & set(s_B))
     res_A = set(s_A) - set(contracted)
     res_B = set(s_B) - set(contracted)
     delta_strings = [s_A, s_B]
-    delta_tensor = [symlib.get_irrep_map(sym1), symlib.get_irrep_map(sym2)]
+    delta_tensor = [symlib.get_irrep_map(sym1_), symlib.get_irrep_map(sym2_)]
     if len(contracted) > 1 and len(res_A)>1 and len(res_B)>1:
         # when more than two symmetry sectors are contracted out and the delta does not exist, auxillary index iss generated
         s_q = ''.join(contracted) + 'Q'
         delta_strings.append(s_q)
         idxa = [s_A.find(i) for i in contracted]
         idxb = [s_B.find(i) for i in contracted]
-        if sym1[0][idxa[0]] != sym2[0][idxb[0]]:
+        if sym1_[0][idxa[0]] != sym2_[0][idxb[0]]:
             phase = -1
         else:
             phase = 1
-        auxa = get_aux_sym_range(sym1, idxa)
-        auxb = get_aux_sym_range(sym2, idxb, phase)
+        auxa = get_aux_sym_range(sym1_, idxa)
+        auxb = get_aux_sym_range(sym2_, idxb, phase)
         aux_range = merge_sym_range(auxa, auxb, modulus1, modulus2)
         # when auxillary range is different from the two tensors, pick the shared one for most compact representation
-        sign_string = ''.join([sym1[0][i] for i in idxa]) + '-'
+        sign_string = ''.join([sym1_[0][i] for i in idxa]) + '-'
         sym_range = [sym1[1][i] for i in idxa]
         sym_range.append(aux_range)
+        print(aux_range)
         aux_sym = [sign_string, sym_range, None, sym1[3]]
         delta_tensor.append(symlib.get_irrep_map(aux_sym))
     delta_lst = fuse_delta([delta_strings, delta_tensor], symlib.backend)
@@ -270,12 +281,14 @@ class SYMLIB:
         return self
 
     def _update(self, sym):
-        SYM_INCLUDED = [self.check_sym_equal(symi, sym)[0] for symi in self.sym_lst]
+        sym_ = utills._cut_non_sym_sec(sym)
+        SYM_INCLUDED = [self.check_sym_equal(symi, sym_)[0] for symi in self.sym_lst]
         if not any(SYM_INCLUDED):
-            self.sym_lst.append(sym)
-            irrep_map = sym_to_irrep_map(sym, self.backend)
+            self.sym_lst.append(sym_)
+            irrep_map = sym_to_irrep_map(sym_, self.backend)
             self.irrep_map_lst.append(irrep_map)
         return self
+
     def __add__(self, symlib2):
         return fuse_symlib(self, symlib2)
 

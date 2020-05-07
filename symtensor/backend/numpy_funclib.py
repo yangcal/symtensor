@@ -7,7 +7,9 @@
 import numpy as np
 BACKEND = 'numpy'
 
-einsum = np.einsum
+def einsum(*args, **kwargs):
+    return np.einsum(*args, **kwargs, optimize=True)
+    
 astensor = np.asarray
 zeros = np.zeros
 empty = np.empty
