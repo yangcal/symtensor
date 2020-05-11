@@ -163,6 +163,10 @@ class SYMtensor:
         return self.array.dtype
 
     @property
+    def size(self):
+        return self.array.size
+
+    @property
     def nsym(self):
         if self._sym is None:
             return 0
