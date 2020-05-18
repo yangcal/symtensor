@@ -9,6 +9,8 @@ def load_lib(libname):
         import symtensor.backend.numpy_funclib as lib
     elif libname == 'ctf':
         import symtensor.backend.ctf_funclib as lib
+    elif libname == 'blas':
+        import symtensor.backend.blas_funclib as lib
     else:
         raise ValueError("Library %s not recognized" %libname)
     return lib
