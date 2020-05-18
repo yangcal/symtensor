@@ -6,9 +6,10 @@
 
 import numpy as np
 BACKEND = 'numpy'
+
 def einsum(*args, **kwargs):
-    kwargs["optimize"]=True
-    return np.einsum(*args, **kwargs)
+    return np.einsum(*args, **kwargs, optimize=True)
+    
 astensor = np.asarray
 zeros = np.zeros
 empty = np.empty

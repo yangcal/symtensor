@@ -19,6 +19,7 @@ BACKEND='numpy'
 backend = load_lib(BACKEND)
 
 def get_full_shape(shape, sym):
+    if sym is not None:  assert(len(sym[0])==len(shape))
     if sym is None:
         return shape
     else:
@@ -89,8 +90,14 @@ def symeinsum(subscripts, op_A, op_B):
         sub_lower= subscripts.lower()
 
         s_A, s_B, s_C = string_lst = utills.sub_to_lst(sub_lower) # divide into lsts
-        sym_string_lst = utills.sub_to_lst(sub_lower.upper())
         out_sym = utills.pre_processing(string_lst, op_A.sym, op_B.sym)
+        sym_string_lst = utills.sub_to_lst(sub_lower.upper())
+        if out_sym is None:
+            symbol_lst = [op_A.sym[0], op_B.sym[0], None]
+        else:
+            symbol_lst = [op_A.sym[0], op_B.sym[0], out_sym[0]]
+        for ki, i in enumerate(sym_string_lst):
+            sym_string_lst[ki] = utills._cut_non_sym_symbol(i, symbol_lst[ki])
         cput1 = logger.timer_debug(op_A, "pre-processing", *cput1)
         A, B = op_A.array, op_B.array
         Nind = utills.count_indep_vars(sym_string_lst)
@@ -104,7 +111,7 @@ def symeinsum(subscripts, op_A, op_B):
             symbols = s_A + s_B
             for ki, i in enumerate(symbols.upper()):
                 bond_dict[i] = shape[ki]
-            irrep_map_lst = symlib.make_irrep_map_lst(op_A.sym, op_B.sym, sym_string_lst) # generate all irrep_maps
+            irrep_map_lst = symlib.make_irrep_map_lst(op_A._sym, op_B._sym, sym_string_lst) # generate all irrep_maps
             A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind, bond_dict)
             cput1 = logger.timer_debug(op_A, "finding contraction path", *cput1)
             A = _transform(A, A_path, s_A, lib)
@@ -124,23 +131,20 @@ def symeinsum(subscripts, op_A, op_B):
             C = SYMtensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
             return C
 
-    #else:
-    #    raise NotImplementedError
 
 class SYMtensor:
     def __init__(self, array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
-        if sym is not None:
-            assert (len(sym[0])==len(sym[1])),  "sign string length insistent with symmetry range"
         self.array = array
         self.sym = sym
+        self._sym = utills._cut_non_sym_sec(sym)
         self.backend = backend
         if sym is None:
             self.symlib = symlib
             self.ndim = self.array.ndim
             self.shape = self.array.shape
         else:
-            self.ndim = (self.array.ndim+1) //2
-            self.shape  = self.array.shape[self.ndim-1:]
+            self.ndim = self.nsym + self.n0sym
+            self.shape = self.array.shape[self.nsym-1:]
             if symlib is None:
                 self.symlib = SYMLIB(self.backend)
             else:
@@ -157,6 +161,24 @@ class SYMtensor:
     @property
     def dtype(self):
         return self.array.dtype
+
+    @property
+    def size(self):
+        return self.array.size
+
+    @property
+    def nsym(self):
+        if self._sym is None:
+            return 0
+        else:
+            return len(self._sym[0])
+
+    @property
+    def n0sym(self):
+        if self.sym is None:
+            return 0
+        else:
+            return self.sym[0].count('0')
 
     def norm(self):
         '''compute the Frobenius norm of the tensor'''
@@ -180,24 +202,32 @@ class SYMtensor:
             new_sym = None
         else:
             sign_strings = ''.join([self.sym[0][i] for i in axes])
-            sym_range = [self.sym[1][i] for i in axes]
-            order = list(axes[:ndim-1]) + [i+ndim-1 for i in axes]
-            new_sym = [sign_strings, sym_range, self.sym[2], self.sym[3]]
-            if axes[-1] == ndim - 1:
-                temp = self.array.transpose(tuple(order))
+            sa = DUMMY_STRINGS[:ndim]
+            sa_ = utills._cut_non_sym_symbol(sa, self.sym[0])
+            sinput = sa_.upper()[:-1] + sa
+
+            sout = ''.join([sa[i] for i in axes])
+            sout_ = utills._cut_non_sym_symbol(sout, sign_strings)
+            new_symrange = []
+            for i in sout_:
+                idx = sa_.find(i)
+                new_symrange.append(self.sym[1][idx])
+
+            soutput = sout_.upper()[:-1] + sout
+            if all([char in sinput for char in soutput]):
+                new_order = [soutput.find(char) for char in sinput]
+                temp = self.array.transpose(tuple(new_order))
             else:
-                s_A = DUMMY_STRINGS[:ndim]
-                s_A = DUMMY_STRINGS[:ndim]
-                Ain = s_A[:-1].upper() + s_A
-                s_A = ''.join([s_A[i] for i in axes])
-                Aout = s_A[:-1].upper() + s_A
                 irrep_map = self.get_irrep_map()
-                sub = Ain + ',' + DUMMY_STRINGS[:ndim].upper() + '->' + Aout
+                sub = sinput + ',' + sa_.upper() + '->' + soutput
                 temp = self.lib.einsum(sub, self.array, irrep_map)
+            new_sym = [sign_strings, new_symrange, self.sym[2], self.sym[3]]
         return SYMtensor(temp, new_sym, self.backend, self.symlib, self.verbose, self.stdout)
 
     def diagonal(self, preserve_shape=False):
-        '''get the diagonal component for tensor with two symmetry sectors, if fill, will return the matrix with diagonal components'''
+        '''get the diagonal component for tensor with two symmetry sectors, if preserve_shape, will return the matrix with diagonal components'''
+        if self.n0sym != 0:
+            raise NotImplementedError("diagonal not well defined with non-symmetric sector")
         lib = self.lib
         if self.ndim == self.array.ndim:
             if preserve_shape:
@@ -214,7 +244,7 @@ class SYMtensor:
                 temp = self.lib.einsum('kii->ki', self.array)
                 return temp
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("diagonal not defined with more than two symmetry sectors")
 
     def get_aux_sym_range(self, idx, phase=1):
         '''
@@ -227,7 +257,7 @@ class SYMtensor:
             phase : int
                 +1 or - 1, denoting whether terms appear on left-hand side (+1) or right-hand side (-1)
         '''
-        return symlib.get_aux_sym_range(self, idx, phase)
+        return symlib.get_aux_sym_range(self.sym, idx, phase)
 
     def copy(self):
         return self._as_new_tensor(self.array)
@@ -282,8 +312,9 @@ class SYMtensor:
     def __setitem__(self, key, value):
         self.array[key] = value
 
-    def write(self, idx, val):
-        self.lib.write_all(self.array, idx, val)
+    def write(self, idx, val, repeat=1):
+        for i in range(repeat):
+            self.lib.write_all(self.array, idx, val)
 
     def write_local(self, idx, val):
         self.lib.write_local(self.array, idx, val)
@@ -293,9 +324,10 @@ class SYMtensor:
         irrep_map  = self.symlib.get_irrep_map(self.sym)
         ndim  = self.ndim
         s_A = DUMMY_STRINGS[:ndim]
-        Ain = s_A[:-1].upper() + s_A
-        Aout = s_A.upper() + s_A
-        sub = Ain + ',' + DUMMY_STRINGS[:ndim].upper() + '->' + Aout
+        s_A_ = utills._cut_non_sym_symbol(s_A, self.sym[0])
+        Ain = s_A_[:-1].upper() + s_A
+        Aout = s_A_.upper() + s_A
+        sub = Ain + ',' + s_A_.upper() + '->' + Aout
         array = self.lib.einsum(sub, self.array, irrep_map)
         return array
 
@@ -304,9 +336,10 @@ class SYMtensor:
         irrep_map  = self.symlib.get_irrep_map(self.sym)
         ndim  = self.ndim
         s_A = DUMMY_STRINGS[:ndim]
-        Ain = s_A.upper() + s_A
-        Aout = s_A[:-1].upper() + s_A
-        sub = Ain + ',' + DUMMY_STRINGS[:ndim].upper() + '->' + Aout
+        s_A_ = utills._cut_non_sym_symbol(s_A, self.sym[0])
+        Ain = s_A_.upper() + s_A
+        Aout = s_A_[:-1].upper() + s_A
+        sub = Ain + ',' + s_A_.upper() + '->' + Aout
         sparse = self.make_sparse()
         self.array = self.lib.einsum(sub, sparse, irrep_map)
         sparse = None
