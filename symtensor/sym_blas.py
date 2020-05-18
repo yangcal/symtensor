@@ -3,7 +3,8 @@
 # Author: Yang Gao <younggao1994@gmail.com>
 #
 '''
-Symtensor with ctf as backend
+Symtensor with BLAS as backend
+https://github.com/LinjianMa/blas-binder
 '''
 from functools import wraps
 from symtensor import sym
