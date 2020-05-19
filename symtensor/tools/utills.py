@@ -25,7 +25,7 @@ def make_subscript(sym_label, orb_label, full=True):
     ntensor = len(sym_label)
     assert(ntensor==len(orb_label))
     if full: # when all symmetry sectors are specified
-        full_list = [sym_label[i][:len(orb_label[i])-1]+orb_label[i] for i in range(ntensor)]
+        full_list = [sym_label[i][:-1]+orb_label[i] for i in range(ntensor)]
     else:
         full_list = [sym_label[i]+orb_label[i] for i in range(ntensor)]
     return lst_to_sub(full_list)
@@ -101,7 +101,10 @@ def pre_processing(string_lst, symA, symB):
     sym_correct = (np.unique(phase).size < 2)
     if not sym_correct:
         raise ValueError("SYMMETRY INCOMPATIBLE")
-    phase = phase[0]
+    if len(phase) ==0:
+        phase = 1
+    else:
+        phase = phase[0]
     rhs = rhs_A * phase + rhs_B
     if phase == 1:
         sign_stringa = symA[0]
