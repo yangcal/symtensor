@@ -22,7 +22,7 @@ def ctf_wrapper(func):
 zeros = ctf_wrapper(sym.zeros)
 random = ctf_wrapper(sym.random)
 zeros_like = sym.zeros_like
-einsum = sym.symeinsum
+einsum = sym.einsum
 
 class SYMtensor_ctf(sym.SYMtensor):
     __init__ = ctf_wrapper(sym.SYMtensor.__init__)

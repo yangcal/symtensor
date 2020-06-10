@@ -11,6 +11,7 @@ from symtensor.symlib import SYMLIB, fuse_symlib
 from symtensor import symlib
 from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills, logger
+from symtensor.tools.path import einsum_path
 import itertools
 import sys
 import numpy as np
@@ -88,7 +89,6 @@ def symeinsum(subscripts, op_A, op_B):
         if 'q' in subscripts.lower():
             raise ValueError("q index is reserved for auxillary index, please change the symmetry label in einsum subscript")
         sub_lower= subscripts.lower()
-
         s_A, s_B, s_C = string_lst = utills.sub_to_lst(sub_lower) # divide into lsts
         out_sym = utills.pre_processing(string_lst, op_A.sym, op_B.sym)
         sym_string_lst = utills.sub_to_lst(sub_lower.upper())
@@ -346,5 +346,20 @@ class SYMtensor:
 
 
 tensor = SYMtensor
-einsum = symeinsum
+
 core_einsum = np.einsum
+
+def einsum(subscripts, *operands):
+    contraction_list = einsum_path(subscripts, *operands)
+    operands = [v for v in operands]
+    for inds, idx_rm, einsum_str in contraction_list:
+        if len(inds) > 2:
+            raise ValueError("einsum_path not able to return pairwise contraction, \
+                              Please manually perform pairwise contraction")
+    for num, contraction in enumerate(contraction_list):
+        inds, idx_rm, einsum_str= contraction
+        tmp_operands = [operands.pop(x) for x in inds]
+        new_view = symeinsum(einsum_str, tmp_operands[0], tmp_operands[1])
+        operands.append(new_view)
+        del tmp_operands, new_view
+    return operands[0]

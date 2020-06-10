@@ -188,8 +188,10 @@ def check_sym_equal(sym1, sym2):
         return (EQUAL, None)
 
 def fuse_symlib(symlib1, symlib2):
-    if symlib1 is None and symlib2 is None:
-        return None
+    if symlib1 is None:
+        return symlib2
+    elif symlib2 is None:
+        return symlib1
     fused_lib = symlib1.copy()
     for ki, i in enumerate(symlib2.sym_lst):
         SYM_INCLUDED = [check_sym_equal(symi, i)[0] for symi in symlib1.sym_lst]
