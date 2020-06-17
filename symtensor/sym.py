@@ -215,7 +215,7 @@ class SYMtensor:
 
             soutput = sout_.upper()[:-1] + sout
             if all([char in sinput for char in soutput]):
-                new_order = [soutput.find(char) for char in sinput]
+                new_order = [sinput.find(char) for char in soutput]
                 temp = self.array.transpose(tuple(new_order))
             else:
                 irrep_map = self.get_irrep_map()
