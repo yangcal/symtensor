@@ -84,7 +84,7 @@ def diag(array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
                 return SYMtensor(out, sym, symlib=symlib, verbose=verbose, stdout=stdout)
             else:
                 raise ValueError("Symmetry not compatible with input array")
-            
+
 def _transform(Aarray, path, orb_label, lib):
     nop = len(path)
     if nop == 0: return Aarray
@@ -181,7 +181,10 @@ class SYMtensor:
             self.shape = self.array.shape
         else:
             self.ndim = self.nsym + self.n0sym
-            self.shape = self.array.shape[self.nsym-1:]
+            if self.nsym !=0:
+                self.shape = self.array.shape[self.nsym-1:]
+            else:
+                self.shape = self.array.shape
             if symlib is None:
                 self.symlib = SYMLIB(self.backend)
             else:
