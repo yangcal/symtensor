@@ -48,6 +48,43 @@ def zeros_like(a, dtype=None):
     array = lib.zeros(full_shape, dtype)
     return a._as_new_tensor(array)
 
+def diag(array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
+    lib = load_lib(backend)
+    IS_SYMTENSOR = hasattr(array, 'array')
+    if IS_SYMTENSOR:
+        nsym = array.nsym
+        n0sym = array.n0sym
+    else:
+        if sym is None:
+            nsym = n0sym = 0
+        else:
+            nsym = len(sym[0]) - sym[0].count('0')
+            n0sym = sym[0].count('0')
+
+    if nsym not in [0,1,2]:
+        raise ValueError("tensor must be 1d or 2d for diag function call")
+
+    if n0sym !=0:
+        raise ValueError("diag not well defined for tensor with non-symmetry sector")
+
+    if IS_SYMTENSOR:
+        return array.diagonal()
+    else:
+        if nsym == 0 or nsym==1:
+            return lib.diag(array)
+        else:
+            if array.ndim==3:
+                assert(array.shape[1]==array.shape[2])
+                out = lib.einsum('kii->ki', array)
+                return out
+            elif array.ndim==2:
+                if not all(len(i)==array.shape[0] for i in sym[1]):
+                    raise ValueError("The first dimension of the array must be equal to the number of symmetry sectors")
+                out = lib.einsum('ki,ij->kij', array, lib.eye(array.shape[-1]))
+                return SYMtensor(out, sym, symlib=symlib, verbose=verbose, stdout=stdout)
+            else:
+                raise ValueError("Symmetry not compatible with input array")
+            
 def _transform(Aarray, path, orb_label, lib):
     nop = len(path)
     if nop == 0: return Aarray
