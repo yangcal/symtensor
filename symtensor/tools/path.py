@@ -124,7 +124,12 @@ def einsum_path(subscript, *operands):
     if len(input_subscripts.split(',')) != len(operands):
         raise ValueError("Number of einsum subscripts must be equal to the "
                          "number of operands.")
-    fakeoperands = [Fakearray(v.shape, v.sym) for v in operands]
+    fakeoperands = []
+    for v in operands:
+        if hasattr(v, "array"):
+            fakeoperands.append(Fakearray(v.shape, v.sym))
+        else:
+            fakeoperands.append(Fakearray(v.shape, None))
     # Build a few useful list and sets
     input_list = input_subscripts.split(',')
     input_sets = [set(x) for x in input_list]

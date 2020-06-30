@@ -4,7 +4,7 @@
 #
 import unittest
 import numpy as np
-from symtensor.sym import random, einsum, core_einsum
+from symtensor import random, einsum
 
 def make_kpts(lattice, nmp):
     ks_each_axis = []
@@ -55,31 +55,31 @@ sym_s = ['+', [kpts], kpts[kshift], gvec]
 class PBCNUMPYTest(unittest.TestCase):
 
     def test_222(self):
-        A = random([nocc,nocc],sym_t1)
-        B = random([nocc,nvir],sym_t1)
-        C = random([nvir,nvir],sym_t1)
-        A_sparse, B_sparse, C_sparse = A.make_sparse(), B.make_sparse(), C.make_sparse()
+        A = random.random([nocc,nocc],sym_t1)
+        B = random.random([nocc,nvir],sym_t1)
+        C = random.random([nvir,nvir],sym_t1)
+        A_dense, B_dense, C_dense = A.make_dense(), B.make_dense(), C.make_dense()
 
-        X = core_einsum('ACac,ICic->IAia', C_sparse, B_sparse)
-        X = core_einsum('IAia,IA->Iia', X, A.get_irrep_map())
+        X = einsum('ACac,ICic->IAia', C_dense, B_dense)
+        X = einsum('IAia,IA->Iia', X, A.get_irrep_map())
 
         X1 = einsum('ac,ic->ia', C, B)
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
-        Y = core_einsum('KIki,KAka->IAia', A_sparse, B_sparse)
-        Y = core_einsum('IAia,IA->Iia', Y, A.get_irrep_map())
+        Y = einsum('KIki,KAka->IAia', A_dense, B_dense)
+        Y = einsum('IAia,IA->Iia', Y, A.get_irrep_map())
         Y1 = einsum('ki,ka->ia', A, B)
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
 
 
     def test_224(self):
-        A = random([nocc,nvir],sym_t1)
-        B = random([nocc,nvir],sym_t1)
-        A_sparse, B_sparse = A.make_sparse(), B.make_sparse()
-        X = core_einsum('IAia,JBjb->IJABijab', A_sparse, B_sparse)
-        X = core_einsum('IJABijab,JB->IJAijab', X, A.get_irrep_map())
+        A = random.random([nocc,nvir],sym_t1)
+        B = random.random([nocc,nvir],sym_t1)
+        A_dense, B_dense = A.make_dense(), B.make_dense()
+        X = einsum('IAia,JBjb->IJABijab', A_dense, B_dense)
+        X = einsum('IJABijab,JB->IJAijab', X, A.get_irrep_map())
 
         X1 = einsum('ia,jb->ijab', A, B)
         diff = (X1-X).norm() / np.sqrt(X.size)
@@ -88,106 +88,106 @@ class PBCNUMPYTest(unittest.TestCase):
 
 
     def test_242(self):
-        A = random([nocc,nvir],sym_t1)
-        B = random([nocc,nocc,nvir,nvir],sym_phys)
-        A_sparse, B_sparse = A.make_sparse(), B.make_sparse()
+        A = random.random([nocc,nvir],sym_t1)
+        B = random.random([nocc,nocc,nvir,nvir],sym_phys)
+        A_dense, B_dense = A.make_dense(), B.make_dense()
 
-        X = core_einsum('KCkc,KICAkica->IAia', A_sparse, B_sparse)
-        X = core_einsum('IAia,IA->Iia', X, A.get_irrep_map())
+        X = einsum('KCkc,KICAkica->IAia', A_dense, B_dense)
+        X = einsum('IAia,IA->Iia', X, A.get_irrep_map())
 
         X1 = einsum('kc,kica->ia', A, B)
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
     def test_244(self):
-        A = random([nocc,nvir], sym_t1)
-        B = random([nocc,nvir,nocc,nocc], sym_chem)
-        C = random([nocc,nvir,nvir,nvir], sym_chem)
-        A_sparse, B_sparse, C_sparse = A.make_sparse(), B.make_sparse(), C.make_sparse()
+        A = random.random([nocc,nvir], sym_t1)
+        B = random.random([nocc,nvir,nocc,nocc], sym_chem)
+        C = random.random([nocc,nvir,nvir,nvir], sym_chem)
+        A_dense, B_dense, C_dense = A.make_dense(), B.make_dense(), C.make_dense()
 
         X1 = einsum('kclj,ic->klij', B, A)
-        X = core_einsum('KCLJkclj,ICic->KLIJklij', B_sparse, A_sparse)
-        X = core_einsum('KLIJklij,KLIJ->KLIklij', X, X1.get_irrep_map())
+        X = einsum('KCLJkclj,ICic->KLIJklij', B_dense, A_dense)
+        X = einsum('KLIJklij,KLIJ->KLIklij', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = einsum('lcki,jc->klij', B, A)
-        Y = core_einsum('LCKIlcki,JCjc->KLIJklij', B_sparse, A_sparse)
-        Y = core_einsum('KLIJklij,KLIJ->KLIklij', Y, Y1.get_irrep_map())
+        Y = einsum('LCKIlcki,JCjc->KLIJklij', B_dense, A_dense)
+        Y = einsum('KLIJklij,KLIJ->KLIklij', Y, Y1.get_irrep_map())
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
 
         Z1 = einsum('kcad,id->akic', C, A)
-        Z = core_einsum('KCADkcad,IDid->AKICakic', C_sparse, A_sparse)
-        Z = core_einsum('AKICakic,AKIC->AKIakic', Z, Z1.get_irrep_map())
+        Z = einsum('KCADkcad,IDid->AKICakic', C_dense, A_dense)
+        Z = einsum('AKICakic,AKIC->AKIakic', Z, Z1.get_irrep_map())
 
         diff = (Z1-Z).norm() / np.sqrt(Z.size)
         self.assertTrue(diff<thresh)
 
     def test_442(self):
-        A = random([nocc,nvir,nocc,nvir], sym_chem)
-        B = random([nocc,nocc,nvir,nvir], sym_phys)
-        C = random([nocc,nvir,nvir,nvir], sym_chem)
-        A_sparse, B_sparse, C_sparse = A.make_sparse(), B.make_sparse(), C.make_sparse()
+        A = random.random([nocc,nvir,nocc,nvir], sym_chem)
+        B = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        C = random.random([nocc,nvir,nvir,nvir], sym_chem)
+        A_dense, B_dense, C_dense = A.make_dense(), B.make_dense(), C.make_dense()
 
         X1 = einsum('kcld,ilcd->ki', A, B)
-        X = core_einsum('KCLDkcld,ILCDilcd->KIki', A_sparse, B_sparse)
-        X = core_einsum('KIki,KI->Kki', X, X1.get_irrep_map())
+        X = einsum('KCLDkcld,ILCDilcd->KIki', A_dense, B_dense)
+        X = einsum('KIki,KI->Kki', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = einsum('kdac,ikcd->ia', C, B)
-        Y = core_einsum('KDACkdac,IKCDikcd->IAia', C_sparse, B_sparse)
-        Y = core_einsum('IAia,IA->Iia', Y, Y1.get_irrep_map())
+        Y = einsum('KDACkdac,IKCDikcd->IAia', C_dense, B_dense)
+        Y = einsum('IAia,IA->Iia', Y, Y1.get_irrep_map())
 
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
 
 
     def test_444(self):
-        B = random([nocc,nvir,nocc,nvir], sym_chem)
-        C = random([nocc,nocc,nvir,nvir], sym_phys)
-        D = random([nvir,nvir,nvir,nvir], sym_phys)
-        B_sparse, C_sparse, D_sparse = B.make_sparse(), C.make_sparse(), D.make_sparse()
+        B = random.random([nocc,nvir,nocc,nvir], sym_chem)
+        C = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        D = random.random([nvir,nvir,nvir,nvir], sym_phys)
+        B_dense, C_dense, D_dense = B.make_dense(), C.make_dense(), D.make_dense()
         X1 = einsum('kcld,ijcd->klij', B, C)
-        X = core_einsum('KCLDkcld,IJCDijcd->KLIJklij', B_sparse, C_sparse)
-        X = core_einsum('KLIJklij,KLIJ->KLIklij', X, X1.get_irrep_map())
+        X = einsum('KCLDkcld,IJCDijcd->KLIJklij', B_dense, C_dense)
+        X = einsum('KLIJklij,KLIJ->KLIklij', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = einsum('ldkc,ilda->akic', B, C)
-        Y = core_einsum('LDKCldkc,ILDAilda->AKICakic', B_sparse, C_sparse)
-        Y = core_einsum('AKICakic,AKIC->AKIakic', Y, Y1.get_irrep_map())
+        Y = einsum('LDKCldkc,ILDAilda->AKICakic', B_dense, C_dense)
+        Y = einsum('AKICakic,AKIC->AKIakic', Y, Y1.get_irrep_map())
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
 
         Z1 = einsum('abcd,ijcd->ijab', D, C)
-        Z = core_einsum('ABCDabcd,IJCDijcd->IJABijab', D_sparse, C_sparse)
-        Z = core_einsum('IJABijab,IJAB->IJAijab', Z, Z1.get_irrep_map())
+        Z = einsum('ABCDabcd,IJCDijcd->IJABijab', D_dense, C_dense)
+        Z = einsum('IJABijab,IJAB->IJAijab', Z, Z1.get_irrep_map())
 
         diff = (Z1-Z).norm() / np.sqrt(Z.size)
         self.assertTrue(diff<thresh)
 
     def test_343(self):
-        klij = random([nocc,nocc,nocc,nocc], sym_phys)
-        klb = random([nocc,nocc,nvir], sym_eom)
-        lbdj = random([nocc,nvir,nvir,nocc], sym_phys)
-        ild = random([nocc,nocc,nvir], sym_eom)
-        klij_sparse, klb_sparse, lbdj_sparse, ild_sparse = klij.make_sparse(), klb.make_sparse(), lbdj.make_sparse(), ild.make_sparse()
+        klij = random.random([nocc,nocc,nocc,nocc], sym_phys)
+        klb = random.random([nocc,nocc,nvir], sym_eom)
+        lbdj = random.random([nocc,nvir,nvir,nocc], sym_phys)
+        ild = random.random([nocc,nocc,nvir], sym_eom)
+        klij_dense, klb_dense, lbdj_dense, ild_dense = klij.make_dense(), klb.make_dense(), lbdj.make_dense(), ild.make_dense()
 
         X1 = einsum('klij,klb->ijb', klij, klb)
-        X = core_einsum('KLIJklij,KLBklb->IJBijb', klij_sparse, klb_sparse)
-        X = core_einsum('IJBijb,IJB->IJijb', X, X1.get_irrep_map())
+        X = einsum('KLIJklij,KLBklb->IJBijb', klij_dense, klb_dense)
+        X = einsum('IJBijb,IJB->IJijb', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = einsum('lbdj,ild->ijb', lbdj, ild)
-        Y = core_einsum('LBDJlbdj,ILDild->IJBijb', lbdj_sparse, ild_sparse)
-        Y = core_einsum('IJBijb,IJB->IJijb', Y, Y1.get_irrep_map())
+        Y = einsum('LBDJlbdj,ILDild->IJBijb', lbdj_dense, ild_dense)
+        Y = einsum('IJBijb,IJB->IJijb', Y, Y1.get_irrep_map())
 
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
@@ -195,21 +195,21 @@ class PBCNUMPYTest(unittest.TestCase):
 
     def test_431(self):
 
-        lkdc = random([nocc,nocc,nvir,nvir], sym_phys)
-        kld = random([nocc,nocc,nvir], sym_eom)
-        kldc = random([nocc,nocc,nvir,nvir], sym_phys)
-        lkdc_sparse, kld_sparse, kldc_sparse = lkdc.make_sparse(), kld.make_sparse(), kldc.make_sparse()
+        lkdc = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        kld = random.random([nocc,nocc,nvir], sym_eom)
+        kldc = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        lkdc_dense, kld_dense, kldc_dense = lkdc.make_dense(), kld.make_dense(), kldc.make_dense()
 
         X1 = einsum('lkdc,kld->c', lkdc, kld)
-        X = core_einsum('LKDClkdc,KLDkld->Cc', lkdc_sparse, kld_sparse)
-        X = core_einsum('Cc,C->c', X, X1.get_irrep_map())
+        X = einsum('LKDClkdc,KLDkld->Cc', lkdc_dense, kld_dense)
+        X = einsum('Cc,C->c', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = einsum('kldc,kld->c', kldc, kld)
-        Y = core_einsum('KLDCkldc,KLDkld->Cc', kldc_sparse, kld_sparse)
-        Y = core_einsum('Cc,C->c', Y, Y1.get_irrep_map())
+        Y = einsum('KLDCkldc,KLDkld->Cc', kldc_dense, kld_dense)
+        Y = einsum('Cc,C->c', Y, Y1.get_irrep_map())
 
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
@@ -217,70 +217,70 @@ class PBCNUMPYTest(unittest.TestCase):
 
     def test_211(self):
 
-        ki = random([nocc,nocc], sym_t1)
-        k = random([nocc], sym_s)
-        ki_sparse, k_sparse = ki.make_sparse(), k.make_sparse()
+        ki = random.random([nocc,nocc], sym_t1)
+        k = random.random([nocc], sym_s)
+        ki_dense, k_dense = ki.make_dense(), k.make_dense()
 
         X1 = einsum('ki,k->i',ki, k)
-        X = core_einsum('KIki,Kk->Ii', ki_sparse, k_sparse)
-        X = core_einsum('Ii,I->i', X, X1.get_irrep_map())
+        X = einsum('KIki,Kk->Ii', ki_dense, k_dense)
+        X = einsum('Ii,I->i', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
 
     def test_231(self):
-        ld = random([nocc,nvir], sym_t1)
-        ild = random([nocc,nocc,nvir], sym_eom)
-        ld_sparse, ild_sparse = ld.make_sparse(), ild.make_sparse()
+        ld = random.random([nocc,nvir], sym_t1)
+        ild = random.random([nocc,nocc,nvir], sym_eom)
+        ld_dense, ild_dense = ld.make_dense(), ild.make_dense()
 
         X1 = einsum('ld,ild->i', ld, ild)
-        X = core_einsum('LDld,ILDild->Ii', ld_sparse, ild_sparse)
-        X = core_einsum('Ii,I->i', X, X1.get_irrep_map())
+        X = einsum('LDld,ILDild->Ii', ld_dense, ild_dense)
+        X = einsum('Ii,I->i', X, X1.get_irrep_map())
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
 
     def test_413(self):
-        c = random([nvir], sym_s)
-        ijcb = random([nocc,nocc,nvir,nvir], sym_phys)
-        c_sparse, ijcb_sparse = c.make_sparse(), ijcb.make_sparse()
+        c = random.random([nvir], sym_s)
+        ijcb = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        c_dense, ijcb_dense = c.make_dense(), ijcb.make_dense()
 
         X1 = einsum('c,ijcb->ijb', c, ijcb)
-        X = core_einsum('Cc,IJCBijcb->IJBijb', c_sparse, ijcb_sparse)
-        X = core_einsum('IJBijb,IJB->IJijb',X,X1.get_irrep_map())
+        X = einsum('Cc,IJCBijcb->IJBijb', c_dense, ijcb_dense)
+        X = einsum('IJBijb,IJB->IJijb',X,X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
 
     def test_233(self):
-        bd = random([nvir,nvir], sym_t1)
-        ijd = random([nocc,nocc,nvir], sym_eom)
-        ki = random([nocc,nocc], sym_t1)
-        kjb = random([nocc,nocc,nvir], sym_eom)
-        bd_sparse, ijd_sparse, ki_sparse, kjb_sparse = bd.make_sparse(), ijd.make_sparse(), ki.make_sparse(), kjb.make_sparse()
+        bd = random.random([nvir,nvir], sym_t1)
+        ijd = random.random([nocc,nocc,nvir], sym_eom)
+        ki = random.random([nocc,nocc], sym_t1)
+        kjb = random.random([nocc,nocc,nvir], sym_eom)
+        bd_dense, ijd_dense, ki_dense, kjb_dense = bd.make_dense(), ijd.make_dense(), ki.make_dense(), kjb.make_dense()
 
         X1 = einsum('bd,ijd->ijb', bd, ijd)
-        X = core_einsum('BDbd,IJDijd->IJBijb', bd_sparse, ijd_sparse)
-        X = core_einsum('IJBijb,IJB->IJijb', X, X1.get_irrep_map())
+        X = einsum('BDbd,IJDijd->IJBijb', bd_dense, ijd_dense)
+        X = einsum('IJBijb,IJB->IJijb', X, X1.get_irrep_map())
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = einsum('ki,kjb->ijb', ki, kjb)
-        Y = core_einsum('KIki,KJBkjb->IJBijb', ki_sparse, kjb_sparse)
-        Y = core_einsum('IJBijb,IJB->IJijb', Y, Y1.get_irrep_map())
+        Y = einsum('KIki,KJBkjb->IJBijb', ki_dense, kjb_dense)
+        Y = einsum('IJBijb,IJB->IJijb', Y, Y1.get_irrep_map())
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
 
 
     def test_440(self):
-        ijab = random([nocc,nocc,nvir,nvir], sym_phys)
-        ijba = random([nocc,nocc,nvir,nvir], sym_phys)
-        ijab_sparse, ijba_sparse = ijab.make_sparse(), ijba.make_sparse()
+        ijab = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        ijba = random.random([nocc,nocc,nvir,nvir], sym_phys)
+        ijab_dense, ijba_dense = ijab.make_dense(), ijba.make_dense()
 
-        X = core_einsum('IJABijab,IJBAijba->', ijab_sparse, ijba_sparse)
+        X = einsum('IJABijab,IJBAijba->', ijab_dense, ijba_dense)
         X1 = einsum('ijab,ijba->', ijab, ijba)
         diff = abs(X-X1)
         self.assertTrue(diff<thresh)

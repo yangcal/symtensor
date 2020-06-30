@@ -6,7 +6,7 @@
 import unittest
 import numpy
 from symtensor import symlib
-from symtensor.sym import random, einsum, core_einsum
+from symtensor import random, einsum
 
 thresh = 1e-8
 sign = {'+':1, '-':-1}
@@ -30,10 +30,10 @@ class MULTIOPERANDSTEST(unittest.TestCase):
         sym4 = ['++-', [ni,nn,np], None, None]
 
 
-        ijk = random([nbond,]*3, sym1)
-        klm = random([nbond,]*3, sym2)
-        nojl = random([nbond,]*4, sym3)
-        inp = random([nbond,]*3, sym4)
+        ijk = random.random([nbond,]*3, sym1)
+        klm = random.random([nbond,]*3, sym2)
+        nojl = random.random([nbond,]*4, sym3)
+        inp = random.random([nbond,]*3, sym4)
 
         pom = einsum('ijk,klm,nojl,inp->pom', ijk, klm, nojl, inp)
 
@@ -46,9 +46,9 @@ class MULTIOPERANDSTEST(unittest.TestCase):
         sym1 = ["+-", [[-1,1]]*2, None, None]
         sym2 = ["++--", [[-1,1]]*4, None, None]
 
-        ie = random([nbond]*2, sym1)
-        ijab = random([nbond]*4, sym2)
-        abcd = random([nbond]*4, sym2)
+        ie = random.random([nbond]*2, sym1)
+        ijab = random.random([nbond]*4, sym2)
+        abcd = random.random([nbond]*4, sym2)
 
         ejcd = einsum('ie,ijab,abcd->ejcd', ie, ijab, abcd)
 

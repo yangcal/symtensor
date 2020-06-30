@@ -7,19 +7,43 @@ Symtensor with numpy as backend
 '''
 
 from symtensor.settings import load_lib
-from symtensor.symlib import SYMLIB, fuse_symlib
+from symtensor.symlib import SYMLIB
 from symtensor import symlib
 from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills, logger
 from symtensor.tools.path import einsum_path
-import itertools
 import sys
 import numpy as np
 import time
-BACKEND='numpy'
-backend = load_lib(BACKEND)
 
-def get_full_shape(shape, sym):
+BACKEND='numpy'
+
+__all__ = ["array", "einsum", "zeros", "zeros_like", "diag", "tensor"]
+
+def _unpack_kwargs(**kwargs):
+    valid_kwarg = ["backend", "symlib", "verbose", "stdout"]
+    for key in kwargs.keys():
+        if key not in valid_kwarg:
+            raise ValueError("%s not a valid kwarg"%(key))
+    _backend = kwargs.get("backend", BACKEND)
+    _symlib = kwargs.get("symlib", None)
+    _verbose = kwargs.get("verbose", 0)
+    _stdout = kwargs.get("stdout", None)
+    return _backend, _symlib, _verbose, _stdout
+
+def is_symtensor(tensor):
+    return hasattr(tensor, 'array')
+
+def infer_backend(tensor):
+    if is_symtensor(tensor):
+        return tensor.lib
+    else:
+        return load_lib(tensor.__class__.__module__.split('.')[0])
+
+def array(arr, sym=None, **kwargs):
+    return SYMtensor(arr, sym, **kwargs)
+
+def get_full_shape(shape, sym=None):
     if sym is not None:  assert(len(sym[0])==len(shape))
     if sym is None:
         return shape
@@ -27,19 +51,12 @@ def get_full_shape(shape, sym):
         full_shape = [len(i) for i in sym[1][:-1]] + list(shape)
         return tuple(full_shape)
 
-def zeros(shape, dtype=float, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
-    lib = load_lib(backend)
+def zeros(shape, sym=None, dtype=float, **kwargs):
+    _backend = _unpack_kwargs(**kwargs)[0]
+    lib = load_lib(_backend)
     full_shape = get_full_shape(shape, sym)
-    array = lib.zeros(full_shape, dtype)
-    return SYMtensor(array, sym, backend, symlib, verbose, stdout)
-
-def random(shape, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
-    lib = load_lib(backend)
-    full_shape = get_full_shape(shape, sym)
-    array = lib.random(full_shape)
-    tensor = SYMtensor(array, sym, backend, symlib, verbose, stdout)
-    tensor.enforce_sym()
-    return tensor
+    arr = lib.zeros(full_shape, dtype)
+    return array(arr, sym, **kwargs)
 
 def zeros_like(a, dtype=None):
     if dtype is None: dtype=a.dtype
@@ -48,9 +65,18 @@ def zeros_like(a, dtype=None):
     array = lib.zeros(full_shape, dtype)
     return a._as_new_tensor(array)
 
-def diag(array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
-    lib = load_lib(backend)
-    IS_SYMTENSOR = hasattr(array, 'array')
+def _random(shape, sym=None, **kwargs):
+    _backend = _unpack_kwargs(**kwargs)[0]
+    lib = load_lib(_backend)
+    full_shape = get_full_shape(shape, sym)
+    arr = lib.random.random(full_shape)
+    tensor = array(arr, sym, **kwargs)
+    tensor.enforce_sym()
+    return tensor
+
+def diag(array, sym=None, **kwargs):
+    lib, _symlib, _verbose, _stdout = _unpack_kwargs(**kwargs)
+    IS_SYMTENSOR = is_symtensor(array)
     if IS_SYMTENSOR:
         nsym = array.nsym
         n0sym = array.n0sym
@@ -81,7 +107,7 @@ def diag(array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
                 if not all(len(i)==array.shape[0] for i in sym[1]):
                     raise ValueError("The first dimension of the array must be equal to the number of symmetry sectors")
                 out = lib.einsum('ki,ij->kij', array, lib.eye(array.shape[-1]))
-                return SYMtensor(out, sym, symlib=symlib, verbose=verbose, stdout=stdout)
+                return SYMtensor(out, _sym, symlib=_symlib, verbose=_verbose, stdout=_stdout)
             else:
                 raise ValueError("Symmetry not compatible with input array")
 
@@ -98,8 +124,21 @@ def _transform(Aarray, path, orb_label, lib):
     Aarray = lib.einsum(subscript, Aarray, *irreps)
     return Aarray
 
-def symeinsum(subscripts, op_A, op_B):
-    lib = op_A.lib
+def pair_einsum(subscripts, op_A, op_B):
+    contraction_type = is_symtensor(op_A) + is_symtensor(op_B)
+    lib = infer_backend(op_A)
+    if contraction_type==0:
+        return lib.einsum(subscripts, op_A, op_B)
+    elif contraction_type==1:
+        if is_symtenosr(op_A):
+            if getattr(op_A, sym, None) is None:
+                out = lib.einsum(subscripts, op_A.array, op_B)
+                return op_A._as_new_tensor(out)
+        if is_symtenosr(op_B):
+            if getattr(op_B, sym, None) is None:
+                out = lib.einsum(subscripts, op_A, op_B.array)
+                return op_B._as_new_tensor(out)
+        raise TypeError("contraction between symmetric-symtensor and non-symtensor not supported")
     cput0 = cput1 = (time.clock(), time.time())
     verbose = max(op_A.verbose, op_B.verbose)
     op_A.verbose = op_B.verbose = verbose
@@ -114,9 +153,8 @@ def symeinsum(subscripts, op_A, op_B):
         if subscripts[-2:]=='->':
             return out
         else:
-            return SYMtensor(out, outsym, op_A.backend, verbose=verbose, stdout=op_A.stdout)
+            return array(out, outsym, backend=op_A.backend, verbose=verbose, stdout=op_A.stdout)
     else:
-        # two operand contraction supported
         if op_A.sym[3] is not None and op_B.sym[3] is not None:
             # modulus needs to the same for the two operands
             assert(np.allclose(op_A.sym[3], op_B.sym[3]))
@@ -193,18 +231,15 @@ class SYMtensor:
         self.stdout = stdout
         self.verbose = verbose
 
+    def __getattr__(self, item):
+        if hasattr(self.array, item):
+            return getattr(self.array, item)
+        else:
+            raise AttributeError("attribute %s not found"%item)
 
     @property
     def lib(self):
         return load_lib(self.backend)
-
-    @property
-    def dtype(self):
-        return self.array.dtype
-
-    @property
-    def size(self):
-        return self.array.size
 
     @property
     def nsym(self):
@@ -228,9 +263,10 @@ class SYMtensor:
         if sym is None: sym=self.sym
         return self.symlib.get_irrep_map(sym)
 
-
     def _as_new_tensor(self, x):
-        newtensor = SYMtensor(x, self.sym, self.backend, self.symlib, self.verbose, self.stdout)
+        newtensor = array(x, self.sym, backend=self.backend, \
+                          symlib=self.symlib, verbose=self.verbose, \
+                          stdout=self.stdout)
         return newtensor
 
     def transpose(self, *axes):
@@ -354,12 +390,9 @@ class SYMtensor:
 
     def write(self, idx, val, repeat=1):
         for i in range(repeat):
-            self.lib.write_all(self.array, idx, val)
+            self.lib.write(self.array, idx, val)
 
-    def write_local(self, idx, val):
-        self.lib.write_local(self.array, idx, val)
-
-    def make_sparse(self):
+    def make_dense(self):
         if self.sym is None: return self.array
         irrep_map  = self.symlib.get_irrep_map(self.sym)
         ndim  = self.ndim
@@ -380,14 +413,12 @@ class SYMtensor:
         Ain = s_A_.upper() + s_A
         Aout = s_A_[:-1].upper() + s_A
         sub = Ain + ',' + s_A_.upper() + '->' + Aout
-        sparse = self.make_sparse()
+        sparse = self.make_dense()
         self.array = self.lib.einsum(sub, sparse, irrep_map)
         sparse = None
 
 
 tensor = SYMtensor
-
-core_einsum = np.einsum
 
 def einsum(subscripts, *operands):
     contraction_list = einsum_path(subscripts, *operands)
@@ -399,7 +430,7 @@ def einsum(subscripts, *operands):
     for num, contraction in enumerate(contraction_list):
         inds, idx_rm, einsum_str= contraction
         tmp_operands = [operands.pop(x) for x in inds]
-        new_view = symeinsum(einsum_str, tmp_operands[0], tmp_operands[1])
+        new_view = pair_einsum(einsum_str, tmp_operands[0], tmp_operands[1])
         operands.append(new_view)
         del tmp_operands, new_view
     return operands[0]
