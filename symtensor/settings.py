@@ -5,7 +5,7 @@
 import importlib
 
 def load_lib(BACKEND):
-    module_path = 'symtensor.backend.%s_funclib'%(BACKEND)
+    module_path = 'symtensor.%s.backend'%(BACKEND)
     try:
         return importlib.import_module(module_path)
     except:

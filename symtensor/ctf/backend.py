@@ -7,10 +7,7 @@
 import sys
 import ctf
 
-FUNCTIONS = ["einsum", "zeros", "nonzero", "tensor", "array", \
-            "astensor", "ones", "empty", "dot", "diag", "eye", \
-            "to_nparray", "write", "hstack", "vstack", \
-            "norm", "random"]
+FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "eye", "write", "array", "to_nparray", "nonzero"]
 
 nonzero = lambda arr: arr.read_all_nnz()[0]
 def write(a, ind, fill):

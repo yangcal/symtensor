@@ -1,5 +1,3 @@
-import numpy
-
 BACKEND_DIC = {'numpy'}
 DEFAULT_BACKEND = 'numpy'
 
