@@ -388,9 +388,9 @@ class SYMtensor:
     def __setitem__(self, key, value):
         self.array[key] = value
 
-    def write(self, idx, val, repeat=1):
+    def put(self, idx, val, repeat=1):
         for i in range(repeat):
-            self.lib.write(self.array, idx, val)
+            self.lib.put(self.array, idx, val)
 
     def make_dense(self):
         if self.sym is None: return self.array

@@ -7,7 +7,7 @@
 import sys
 import numpy
 
-FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "eye", "write", "array", "to_nparray", "nonzero"]
+FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "eye", "put", "array", "to_nparray", "nonzero"]
 
 astensor = numpy.asarray
 tensor = numpy.array
@@ -15,7 +15,7 @@ norm = numpy.linalg.norm
 qr = numpy.linalg.qr
 to_nparray = lambda arr: arr
 
-def write(a, ind, fill):
+def put(a, ind, fill):
     a.put(ind, fill)
     return a
 

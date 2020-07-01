@@ -57,9 +57,9 @@ def sym_to_irrep_map(sym, backend):
         fill = np.ones(len(idx))
         shape = [len(i) for i in sym_range]
 
-        lib.write(delta, idx, fill)
+        lib.put(delta, idx, fill)
     else:
-        lib.write(delta, [], [])
+        lib.put(delta, [], [])
     return delta
 
 
@@ -267,9 +267,9 @@ def _fuse_delta(sub, delta_a, delta_b, backend):
     fill = np.ones(len(idx))
     rank = getattr(lib, "rank", 0)
     if rank==0:
-        lib.write(delta, idx, fill)
+        lib.put(delta, idx, fill)
     else:
-        lib.write(delta, [], [])
+        lib.put(delta, [], [])
     return delta
 
 
