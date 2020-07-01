@@ -5,7 +5,7 @@ from symtensor.sym import (array, einsum, zeros, get_full_shape, \
 from . import random
 import numpy
 
-__all__.extend(["random", "fromfunction"])
+__all__.extend(["random", "fromfunction", "frombatchfunc"])
 def backend_wrapper(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -35,4 +35,13 @@ def fromfunction(func, shape, **kwargs):
             trunk_data = func(*idx, **kwargs)
             trunk_idx = i * trunk_size + numpy.arange(trunk_size)
             out.put(trunk_idx, trunk_data.ravel())
+    return out
+
+def frombatchfunc(func, shape, all_tasks, **kwargs):
+    sym = kwargs.pop("sym", None)
+    dtype = kwargs.pop("dtype", float)
+    out = zeros(shape, sym=sym, dtype=dtype)
+    for itask in all_tasks:
+        ind, val = func(*itask, **kwargs)
+        out.put(ind.ravel(), val.ravel())
     return out
