@@ -9,6 +9,11 @@ import ctf
 
 FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "eye", "put", "array", "to_nparray", "nonzero"]
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
 nonzero = lambda arr: arr.read_all_nnz()[0]
 def put(a, ind, fill):
     a.write(ind, fill)

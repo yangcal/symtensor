@@ -38,10 +38,35 @@ def fromfunction(func, shape, **kwargs):
     return out
 
 def frombatchfunc(func, shape, all_tasks, **kwargs):
+    nout = kwargs.pop("nout", 1)
     sym = kwargs.pop("sym", None)
     dtype = kwargs.pop("dtype", float)
-    out = zeros(shape, sym=sym, dtype=dtype)
+    if isinstance(shape[0], list) or isinstance(shape[0], tuple):
+        shape_list = shape
+    else:
+        shape_list = [shape,] * nout
+
+    if sym is None:
+        sym_list = [sym,]*nout
+    elif isinstance(sym[0], str):
+        sym_list = [sym,]*nout
+    else:
+        sym_list = sym
+
+    out = kwargs.pop('out', None)
+    if out is None:
+        if nout==1:
+            out = zeros(shape, sym, dtype=dtype)
+        else:
+            out = [zeros(shape_list[i], sym_list[i], dtype=dtype) for i in range(nout)]
+
     for itask in all_tasks:
-        ind, val = func(*itask, **kwargs)
-        out.put(ind.ravel(), val.ravel())
+        inds, vals = func(*itask, **kwargs)
+        if nout ==1:
+            out.put(inds.ravel(), vals.ravel())
+        else:
+            for i in range(nout):
+                out[i].put(inds[i].ravel(), vals[i].ravel())
+        inds = vals = None
+
     return out

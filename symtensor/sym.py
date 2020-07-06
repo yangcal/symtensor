@@ -75,7 +75,8 @@ def _random(shape, sym=None, **kwargs):
     return tensor
 
 def diag(array, sym=None, **kwargs):
-    lib, _symlib, _verbose, _stdout = _unpack_kwargs(**kwargs)
+    _backend, _symlib, _verbose, _stdout = _unpack_kwargs(**kwargs)
+    lib = load_lib(_backend)
     IS_SYMTENSOR = is_symtensor(array)
     if IS_SYMTENSOR:
         nsym = array.nsym
@@ -130,12 +131,12 @@ def pair_einsum(subscripts, op_A, op_B):
     if contraction_type==0:
         return lib.einsum(subscripts, op_A, op_B)
     elif contraction_type==1:
-        if is_symtenosr(op_A):
-            if getattr(op_A, sym, None) is None:
+        if is_symtensor(op_A):
+            if getattr(op_A, "sym", None) is None:
                 out = lib.einsum(subscripts, op_A.array, op_B)
                 return op_A._as_new_tensor(out)
-        if is_symtenosr(op_B):
-            if getattr(op_B, sym, None) is None:
+        if is_symtensor(op_B):
+            if getattr(op_B, "sym", None) is None:
                 out = lib.einsum(subscripts, op_A, op_B.array)
                 return op_B._as_new_tensor(out)
         raise TypeError("contraction between symmetric-symtensor and non-symtensor not supported")
@@ -388,9 +389,8 @@ class SYMtensor:
     def __setitem__(self, key, value):
         self.array[key] = value
 
-    def put(self, idx, val, repeat=1):
-        for i in range(repeat):
-            self.lib.put(self.array, idx, val)
+    def put(self, idx, val):
+        self.lib.put(self.array, idx, val)
 
     def make_dense(self):
         if self.sym is None: return self.array
