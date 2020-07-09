@@ -87,7 +87,7 @@ def diag(array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
 
 def _transform(Aarray, path, orb_label, lib):
     nop = len(path)
-    if nop == 0: return Aarray
+    if nop == 0: return Aarray, '', None
     symstring, irreps = [], []
     for ki, (sym_label, irrep_map) in enumerate(path):
         if ki ==0: symstring += [sym_label[0]]
@@ -96,7 +96,8 @@ def _transform(Aarray, path, orb_label, lib):
         irreps.append(irrep_map)
     subscript = utills.make_subscript(symstring, [orb_label]+['']*(len(symstring)-2)+[orb_label], full=False)
     Aarray = lib.einsum(subscript, Aarray, *irreps)
-    return Aarray
+    shape_list = [Aarray.shape]+[i.shape for i in irreps]
+    return Aarray, subscript, shape_list
 
 def symeinsum(subscripts, op_A, op_B):
     lib = op_A.lib
@@ -151,15 +152,22 @@ def symeinsum(subscripts, op_A, op_B):
             irrep_map_lst = symlib.make_irrep_map_lst(op_A._sym, op_B._sym, sym_string_lst) # generate all irrep_maps
             A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind, bond_dict)
             cput1 = logger.timer_debug(op_A, "finding contraction path", *cput1)
-            A = _transform(A, A_path, s_A, lib)
-            cput1 = logger.timer_debug(op_A, "transforming input %s"%s_A, *cput1)
-            B = _transform(B, B_path, s_B, lib)
-            cput1 = logger.timer_debug(op_A, "transforming input %s"%s_B, *cput1)
+            A, _sub, _shape_list = _transform(A, A_path, s_A, lib)
+            if _shape_list is not None:
+                _shape_list = str(_shape_list).replace('[','').replace(']','')
+                cput1 = logger.timer_debug(op_A, "transforming input %s via %s, shape: %s"%(s_A,_sub, _shape_list), *cput1)
+            B, _sub, _shape_list = _transform(B, B_path, s_B, lib)
+            if _shape_list is not None:
+                _shape_list = str(_shape_list).replace('[','').replace(']','')
+                cput1 = logger.timer_debug(op_A, "transforming input %s via %s, shape: %s"%(s_B,_sub, _shape_list), *cput1)
             main_subscript = utills.make_subscript(main_sym_label, string_lst, full=False)
             C = lib.einsum(main_subscript, A, B)
-            cput1 = logger.timer(op_A, "main contraction %s"%main_subscript, *cput1)
-            C = _transform(C, C_path, s_C, lib)
-            logger.timer_debug(op_A, "transforming output %s"%s_C, *cput1)
+            _shape_list = str([A.shape, B.shape]).replace('[','').replace(']','')
+            cput1 = logger.timer(op_A, "main contraction %s, shape:%s"%(main_subscript, _shape_list), *cput1)
+            C, _sub, _shape_list = _transform(C, C_path, s_C, lib)
+            if _shape_list is not None:
+                _shape_list = str(_shape_list).replace('[','').replace(']','')
+                cput1 = logger.timer_debug(op_A, "transforming onput %s via %s, shape: %s"%(s_C,_sub, _shape_list), *cput1)
 
         op_A.symlib = op_B.symlib = symlib
         if out_sym is None:

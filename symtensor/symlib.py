@@ -22,7 +22,7 @@ def sym_to_irrep_map(sym, backend):
     sign_string, sym_range, rhs, modulus = utills._cut_non_sym_sec(sym)
     shape = [len(i) for i in sym_range]
     delta = lib.zeros(shape)
-    if isinstance(sym_range[0][0], int):
+    if isinstance(sym_range[0][0], (int, np.integer)):
         ndim = 1
     else:
         ndim = len(sym_range[0][0])
