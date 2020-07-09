@@ -54,14 +54,25 @@ def frombatchfunc(func, shape, all_tasks, **kwargs):
         sym_list = sym
 
     out = kwargs.pop('out', None)
+
     if out is None:
         if nout==1:
             out = zeros(shape, sym, dtype=dtype)
         else:
             out = [zeros(shape_list[i], sym_list[i], dtype=dtype) for i in range(nout)]
+    else:
+        if isinstance(out, (list, tuple)):
+            nout = len(out)
+        else:
+            nout = 1
 
     for itask in all_tasks:
-        inds, vals = func(*itask, **kwargs)
+
+        if isinstance(itask, (tuple, list)):
+            inds, vals = func(*itask, **kwargs)
+        else:
+            inds, vals = func(itask, **kwargs)
+            
         if nout ==1:
             out.put(inds.ravel(), vals.ravel())
         else:

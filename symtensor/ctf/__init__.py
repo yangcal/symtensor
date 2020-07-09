@@ -14,12 +14,11 @@ def backend_wrapper(func):
         return func(*args, **kwargs)
     return wrapper
 
-
-
 zeros = backend_wrapper(zeros)
 diag = backend_wrapper(diag)
 array = backend_wrapper(array)
 tensor = backend_wrapper(tensor)
+
 
 
 from mpi4py import MPI
@@ -82,6 +81,12 @@ def frombatchfunc(func, shape, all_tasks, **kwargs):
             out = zeros(shape, sym, dtype=dtype)
         else:
             out = [zeros(shape_list[i], sym_list[i], dtype=dtype) for i in range(nout)]
+    else:
+        if isinstance(out, (list, tuple)):
+            nout = len(out)
+        else:
+            nout = 1
+
     tasks, ntasks = static_partition(all_tasks)
     for itask in range(ntasks):
         if itask>= len(tasks):
@@ -91,7 +96,12 @@ def frombatchfunc(func, shape, all_tasks, **kwargs):
                 for i in range(nout):
                     out[i].put([], [])
             continue
-        inds, vals = func(*tasks[itask], **kwargs)
+        task = tasks[itask]
+        if isinstance(task, (tuple, list)):
+            inds, vals = func(*task, **kwargs)
+        else:
+            inds, vals = func(task, **kwargs)
+
         if nout ==1:
             out.put(inds.ravel(), vals.ravel())
         else:

@@ -125,9 +125,16 @@ def _transform(Aarray, path, orb_label, lib):
     Aarray = lib.einsum(subscript, Aarray, *irreps)
     return Aarray
 
-def pair_einsum(subscripts, op_A, op_B):
-    contraction_type = is_symtensor(op_A) + is_symtensor(op_B)
+def _einsum(subscripts, *operands):
+    if len(operands)==1:
+        op_A = operands[0]
+    else:
+        op_A, op_B = operands
     lib = infer_backend(op_A)
+    if len(operands)==1:
+        return lib.einsum(subscripts, op_A)
+
+    contraction_type = is_symtensor(op_A) + is_symtensor(op_B)
     if contraction_type==0:
         return lib.einsum(subscripts, op_A, op_B)
     elif contraction_type==1:
@@ -430,7 +437,7 @@ def einsum(subscripts, *operands):
     for num, contraction in enumerate(contraction_list):
         inds, idx_rm, einsum_str= contraction
         tmp_operands = [operands.pop(x) for x in inds]
-        new_view = pair_einsum(einsum_str, tmp_operands[0], tmp_operands[1])
+        new_view = _einsum(einsum_str, *tmp_operands)
         operands.append(new_view)
         del tmp_operands, new_view
     return operands[0]

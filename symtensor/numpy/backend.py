@@ -7,9 +7,9 @@
 import sys
 import numpy
 
-FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "eye", "put", "array", "to_nparray", "nonzero"]
+FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "asarray", "hstack", "vstack",\
+             "argsort", "eye", "put", "array", "to_nparray", "nonzero"]
 
-astensor = numpy.asarray
 tensor = numpy.array
 norm = numpy.linalg.norm
 qr = numpy.linalg.qr
