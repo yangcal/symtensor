@@ -69,7 +69,7 @@ def fold_sym_range(sym_range, modulus):
         if isinstance(sym_range[0][0], int):
             return np.unique(sym_range)
         else:
-            val = np.unique(np.round_(sym_range, 14),axis=0)
+            val = np.unique(np.round_(sym_range, 10),axis=0)
             return val
     else:
         if isinstance(modulus, int):
@@ -80,9 +80,9 @@ def fold_sym_range(sym_range, modulus):
             pbc_inv = np.asarray([np.cross(modulus[i-2], modulus[i-1])/vol for i in range(ndim)]).T
             sym_array = np.asarray(sym_range)
             val = np.dot(sym_array, pbc_inv)
-            val = np.round_(val, 14)
+            val = np.round_(val, 10)
             val = val - np.floor(val)
-            val = np.round_(val, 14)
+            val = np.round_(val, 10)
             val = np.unique(val, axis=0)
             return np.dot(val, modulus)
 
