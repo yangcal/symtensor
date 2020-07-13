@@ -193,14 +193,14 @@ def _einsum(subscripts, *operands):
             A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind, bond_dict)
             cput1 = logger.timer_debug(op_A, "finding contraction path", *cput1)
             A = _transform(A, A_path, s_A, lib)
-            cput1 = logger.timer_debug(op_A, "transforming input %s"%s_A, *cput1)
+            cput1 = logger.timer_debug(op_A, "transforming input %s"%(s_A), *cput1)
             B = _transform(B, B_path, s_B, lib)
-            cput1 = logger.timer_debug(op_A, "transforming input %s"%s_B, *cput1)
+            cput1 = logger.timer_debug(op_A, "transforming input %s"%(s_B), *cput1)
             main_subscript = utills.make_subscript(main_sym_label, string_lst, full=False)
             C = lib.einsum(main_subscript, A, B)
-            cput1 = logger.timer(op_A, "main contraction %s"%main_subscript, *cput1)
+            cput1 = logger.timer(op_A, "main contraction %s"%(main_subscript), *cput1)
             C = _transform(C, C_path, s_C, lib)
-            logger.timer_debug(op_A, "transforming output %s"%s_C, *cput1)
+            cput1 = logger.timer_debug(op_A, "transforming onput %s"%(s_C), *cput1)
 
         op_A.symlib = op_B.symlib = symlib
         if out_sym is None:

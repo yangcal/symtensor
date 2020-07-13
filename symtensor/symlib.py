@@ -116,7 +116,6 @@ def get_aux_sym_range(sym, idx, phase=1):
 
     out_left, out_right = out_left.reshape(-1,ndim), out_right.reshape(-1,ndim)
     if rhs is not None: out_right += rhs
-
     out_left = fold_sym_range(out_left, modulus)
     out_right = fold_sym_range(out_right, modulus)
     if ndim ==1:
