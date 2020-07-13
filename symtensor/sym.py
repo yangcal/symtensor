@@ -303,6 +303,9 @@ class SYMtensor:
             new_sym = [sign_strings, new_symrange, self.sym[2], self.sym[3]]
         return SYMtensor(temp, new_sym, self.backend, self.symlib, self.verbose, self.stdout)
 
+    def ravel(self):
+        return self.array.ravel()
+
     def diagonal(self, preserve_shape=False):
         '''get the diagonal component for tensor with two symmetry sectors, if preserve_shape, will return the matrix with diagonal components'''
         if self.n0sym != 0:
