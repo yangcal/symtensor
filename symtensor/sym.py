@@ -115,14 +115,9 @@ def diag(array, sym=None, **kwargs):
 def _transform(Aarray, path, orb_label, lib):
     nop = len(path)
     if nop == 0: return Aarray
-    symstring, irreps = [], []
     for ki, (sym_label, irrep_map) in enumerate(path):
-        if ki ==0: symstring += [sym_label[0]]
-        symstring += sym_label[1:-1]
-        if ki == nop -1: symstring += [sym_label[-1]]
-        irreps.append(irrep_map)
-    subscript = utills.make_subscript(symstring, [orb_label]+['']*(len(symstring)-2)+[orb_label], full=False)
-    Aarray = lib.einsum(subscript, Aarray, *irreps)
+        subscript  = utills.make_subscript(sym_label, [orb_label]+['']*(len(sym_label)-2)+[orb_label], full=False)
+        Aarray = lib.einsum(subscript, Aarray, irrep_map)
     return Aarray
 
 def _einsum(subscripts, *operands):
