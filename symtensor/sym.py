@@ -127,7 +127,10 @@ def _einsum(subscripts, *operands):
         op_A, op_B = operands
     lib = infer_backend(op_A)
     if len(operands)==1:
-        return lib.einsum(subscripts, op_A)
+        if is_symtensor(op_A):
+            return lib.einsum(subscripts, op_A.array)
+        else:
+            return lib.einsum(subscripts, op_A)
 
     contraction_type = is_symtensor(op_A) + is_symtensor(op_B)
     if contraction_type==0:
