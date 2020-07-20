@@ -9,7 +9,7 @@ import ctf
 import numpy
 
 FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "asarray", "hstack", "vstack",\
-             "argsort", "eye", "put", "array", "to_nparray", "nonzero"]
+             "argsort", "eye", "put", "array", "to_nparray", "nonzero", "dot"]
 
 asarray = ctf.astensor
 from mpi4py import MPI

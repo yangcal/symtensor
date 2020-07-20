@@ -8,7 +8,7 @@ import sys
 import numpy
 
 FUNCTIONS = ["einsum", "zeros", "diag", "norm", "random", "asarray", "hstack", "vstack",\
-             "argsort", "eye", "put", "array", "to_nparray", "nonzero"]
+             "argsort", "eye", "put", "array", "to_nparray", "nonzero", "dot"]
 
 tensor = numpy.array
 norm = numpy.linalg.norm
