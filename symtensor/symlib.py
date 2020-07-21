@@ -99,7 +99,7 @@ def get_aux_sym_range(sym, idx, phase=1):
     left_idx, right_idx = new_idx, [i for i in range(len(sym_range)) if i not in new_idx]
     nleft, nright = len(left_idx), len(right_idx)
     out_left, out_right = [0,]*2
-    if isinstance(sym_range[0][0], int):
+    if isinstance(sym_range[0][0], (int, np.integer)):
         ndim = 1
     else:
         ndim = len(sym_range[0][0])
