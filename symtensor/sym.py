@@ -137,14 +137,11 @@ def _einsum(subscripts, *operands):
         return lib.einsum(subscripts, op_A, op_B)
     elif contraction_type==1:
         if is_symtensor(op_A):
-            if getattr(op_A, "sym", None) is None:
-                out = lib.einsum(subscripts, op_A.array, op_B)
-                return op_A._as_new_tensor(out)
-        if is_symtensor(op_B):
-            if getattr(op_B, "sym", None) is None:
-                out = lib.einsum(subscripts, op_A, op_B.array)
-                return op_B._as_new_tensor(out)
-        raise TypeError("contraction between symmetric-symtensor and non-symtensor not supported")
+            out = lib.einsum(subscripts, op_A.array, op_B)
+            return out
+        else:
+            out = lib.einsum(subscripts, op_A, op_B.array)
+            return out
     cput0 = cput1 = (time.clock(), time.time())
     verbose = max(op_A.verbose, op_B.verbose)
     op_A.verbose = op_B.verbose = verbose
