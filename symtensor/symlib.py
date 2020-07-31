@@ -133,7 +133,7 @@ def merge_sym_range(range_A, range_B, modulus1=None, modulus2=None):
         return _merge_sym_range(range_A, range_B)
     elif modulus1 is None and modulus2 is not None:
         rA = fold_sym_range(range_A, modulus2)
-        return _merge_sym_range(range_B, r_A)
+        return _merge_sym_range(range_B, rA)
     else:
         rB = fold_sym_range(range_B, modulus1)
         return _merge_sym_range(range_A, rB)
@@ -228,7 +228,11 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
         sign_string = ''.join([sym1_[0][i] for i in idxa]) + '-'
         sym_range = [sym1[1][i] for i in idxa]
         sym_range.append(aux_range)
-        aux_sym = [sign_string, sym_range, None, sym1[3]]
+        if sym1[3] is not None:
+            symq = sym1[3]
+        else:
+            symq = sym2[3]
+        aux_sym = [sign_string, sym_range, None, symq]
         delta_tensor.append(symlib.get_irrep_map(aux_sym))
     delta_lst = fuse_delta([delta_strings, delta_tensor], symlib.backend)
     return delta_lst
