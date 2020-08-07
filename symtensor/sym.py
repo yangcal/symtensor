@@ -209,6 +209,65 @@ def _einsum(subscripts, *operands):
             C = SYMtensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
             return C
 
+def sym_slice(operand, symslice, orbslice):
+    slice_lst = []
+    sym = operand.sym
+    if sym is None:
+        raise ValueError("_sym_slice is only implemented for symmetric tensor")
+    else:
+        outsymbol = ''
+        rhs = sym[2]
+        mod = sym[3]
+        if rhs is None: rhs = 0
+        sym_range = []
+    for k, xs in enumerate(symslice):
+        if xs is None:
+            slice_lst.append(slice(None,None,None))
+            outsymbol += sym[0][k]
+            sym_range.append(sym[1][k])
+
+        elif isinstance(xs, int):
+            slice_lst.append(xs)
+            outsymbol+= '0'
+            if sym[0][k]=='-':
+                rhs += sym[1][k][xs]
+            else:
+                rhs -= sym[1][k][xs]
+        else:
+            if len(xs)==2:
+                tmpslice = slice(xs[0],xs[1],None)
+            elif len(xs)==3:
+                tmpslice = slice(xs[0],xs[1],xs[2])
+            else:
+                raise ValueError("slice not recoginized")
+            slice_lst.append(tmpslice)
+            outsymbol += sym[0][k]
+            sym_range.append(sym[1][k][tmpslice])
+    if len(symslice)==(operand.nsym-1):
+        outsymbol += sym[0][-1]
+        sym_range.append(sym[1][k])
+
+    for k, xs in enumerate(orbslice):
+        if xs is None:
+            slice_lst.append(slice(None,None,None))
+        elif isinstance(xs, int):
+            slice_lst.append(slice(xs,xs+1,None))
+        else:
+            if len(xs)==2:
+                tmpslice = slice(xs[0],xs[1],None)
+            elif len(xs)==3:
+                tmpslice = slice(xs[0],xs[1],xs[2])
+            else:
+                raise ValueError("slice not recoginized")
+            slice_lst.append(tmpslice)
+
+    full_slice = tuple(slice_lst)
+    tensor = operand.array[full_slice]
+    outsym = [outsymbol, sym_range, rhs, mod]
+    out = array(tensor, outsym, backend=operand.backend)
+    out.symlib = operand.symlib
+    return out
+
 
 class SYMtensor:
     def __init__(self, array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
@@ -422,6 +481,7 @@ class SYMtensor:
         self.array = self.lib.einsum(sub, sparse, irrep_map)
         sparse = None
 
+    sym_slice = sym_slice
 
 tensor = SYMtensor
 
