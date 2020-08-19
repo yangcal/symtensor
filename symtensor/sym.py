@@ -209,66 +209,6 @@ def _einsum(subscripts, *operands):
             C = SYMtensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
             return C
 
-def sym_slice(operand, symslice, orbslice):
-    slice_lst = []
-    sym = operand.sym
-    if sym is None:
-        raise ValueError("_sym_slice is only implemented for symmetric tensor")
-    else:
-        outsymbol = ''
-        rhs = sym[2]
-        mod = sym[3]
-        if rhs is None: rhs = 0
-        sym_range = []
-    for k, xs in enumerate(symslice):
-        if xs is None:
-            slice_lst.append(slice(None,None,None))
-            outsymbol += sym[0][k]
-            sym_range.append(sym[1][k])
-
-        elif isinstance(xs, int):
-            slice_lst.append(xs)
-            outsymbol+= '0'
-            if sym[0][k]=='-':
-                rhs += sym[1][k][xs]
-            else:
-                rhs -= sym[1][k][xs]
-        else:
-            if len(xs)==2:
-                tmpslice = slice(xs[0],xs[1],None)
-            elif len(xs)==3:
-                tmpslice = slice(xs[0],xs[1],xs[2])
-            else:
-                raise ValueError("slice not recoginized")
-            slice_lst.append(tmpslice)
-            outsymbol += sym[0][k]
-            sym_range.append(sym[1][k][tmpslice])
-    if len(symslice)==(operand.nsym-1):
-        outsymbol += sym[0][-1]
-        sym_range.append(sym[1][k])
-
-    for k, xs in enumerate(orbslice):
-        if xs is None:
-            slice_lst.append(slice(None,None,None))
-        elif isinstance(xs, int):
-            slice_lst.append(slice(xs,xs+1,None))
-        else:
-            if len(xs)==2:
-                tmpslice = slice(xs[0],xs[1],None)
-            elif len(xs)==3:
-                tmpslice = slice(xs[0],xs[1],xs[2])
-            else:
-                raise ValueError("slice not recoginized")
-            slice_lst.append(tmpslice)
-
-    full_slice = tuple(slice_lst)
-    tensor = operand.array[full_slice]
-    outsym = [outsymbol, sym_range, rhs, mod]
-    out = array(tensor, outsym, backend=operand.backend)
-    out.symlib = operand.symlib
-    return out
-
-
 class SYMtensor:
     def __init__(self, array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
         self.array = array
@@ -436,19 +376,48 @@ class SYMtensor:
     __truediv__ = __div__
 
     def __getitem__(self, key):
-        temp = self.array[key]
-        ndim = self.ndim
-
         if self.sym is None:
-            if temp.ndim == self.ndim:
-                return self._as_new_tensor(temp)
-            else:
-                return temp
+            return self._as_new_tensor(self.array[key])
+        new_symbol = ''
+        new_sym_range = []
+        if self.sym[2] is None:
+            new_rhs = 0
         else:
-            if temp.ndim == self.array.ndim and temp.shape[:ndim-1]==self.array.shape[:ndim-1]:
-                return self._as_new_tensor(self.array[key])
+            new_rhs = self.sym[2]
+        arr = self.array[key]
+        if isinstance(key, (slice, int)):
+            key = [key]
+        if len(key)>= self.nsym:
+            key = key[:self.nsym-1]
+
+        symcount = 0
+        nsymcount = 0
+        for xs, s in enumerate(self.sym[0]):
+            if s=='0':
+                new_symbol += '0'
+                nsymcount += 1
+                continue
+            elif symcount>len(key)-1:
+                count = symcount + nsymcount
+                new_symbol += self.sym[0][count:]
+                new_sym_range += self.sym[1][symcount:]
+                break
+            elif isinstance(key[symcount], (int, np.int)):
+                new_symbol += '0'
+                new_rhs = new_rhs + self.sym[1][symcount][key[symcount]] * (-1+2*(s=='-'))
+                symcount += 1
             else:
-                return temp
+                new_symbol += s
+                new_sym_range.append(self.sym[1][symcount][key[symcount]])
+                symcount += 1
+
+        new_sym = [new_symbol, new_sym_range, new_rhs, self.sym[3]]
+        n0sym = new_symbol.count('0')
+        nsym = len(new_symbol) - n0sym
+        if arr.ndim == 2*nsym-1+n0sym:
+            return array(arr, new_sym, backend=self.backend)
+        else:
+            return arr
 
     def __setitem__(self, key, value):
         self.array[key] = value
@@ -480,8 +449,6 @@ class SYMtensor:
         sparse = self.make_dense()
         self.array = self.lib.einsum(sub, sparse, irrep_map)
         sparse = None
-
-    sym_slice = sym_slice
 
 tensor = SYMtensor
 
