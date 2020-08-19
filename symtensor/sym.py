@@ -6,15 +6,17 @@
 Symtensor with numpy as backend
 '''
 
+import copy
+import sys
+import numpy as np
+import time
 from symtensor.settings import load_lib
 from symtensor.symlib import SYMLIB
 from symtensor import symlib
 from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills, logger
 from symtensor.tools.path import einsum_path
-import sys
-import numpy as np
-import time
+
 
 BACKEND='numpy'
 
@@ -453,6 +455,33 @@ class SYMtensor:
 tensor = SYMtensor
 
 def einsum(subscripts, *operands):
+    newsub = copy.copy(subscripts).replace(' ', '')
+    if '->' not in newsub:
+        newsub += '->'
+    sublist= newsub.replace('->',',').split(',')
+    if len(sublist) != len(operands)+1:
+        raise ValueError("subscript inputs not matching number of operands")
+
+    use_symmetry = []
+    for ki, i in enumerate(operands):
+        if is_symtensor(i):
+            if i.array.ndim == len(sublist[ki]):
+                use_symmetry.append(False)
+            elif i.ndim == len(sublist[ki]):
+                use_symmetry.append(True)
+            else:
+                raise ValueError("tensor dimension not matching input subscript")
+        else:
+            use_symmetry.append(False)
+    use_symmetry = sum(use_symmetry)
+    if not use_symmetry:
+        backend = infer_backend(operands[0])
+        tmp_operands = [getattr(i, 'array', i) for i in operands]
+        return backend.einsum(subscripts, *tmp_operands)
+    elif use_symmetry != len(operands):
+        raise TypeError("mixed symmetric and non-symmetric labels found in the subscript, \
+                        please switch to fully non-symmetric or symmetric notation")
+
     contraction_list = einsum_path(subscripts, *operands)
     operands = [v for v in operands]
     for inds, idx_rm, einsum_str in contraction_list:
