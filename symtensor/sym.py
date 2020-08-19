@@ -462,26 +462,24 @@ def einsum(subscripts, *operands):
     if len(sublist) != len(operands)+1:
         raise ValueError("subscript inputs not matching number of operands")
 
-    use_symmetry = []
+    use_symmetry = 0
+    use_non_symmetry = 0
     for ki, i in enumerate(operands):
         if is_symtensor(i):
             if i.array.ndim == len(sublist[ki]):
-                use_symmetry.append(False)
-            elif i.ndim == len(sublist[ki]):
-                use_symmetry.append(True)
-            else:
-                raise ValueError("tensor dimension not matching input subscript")
+                use_non_symmetry += 1
+            if i.ndim == len(sublist[ki]):
+                use_symmetry += 1
         else:
-            use_symmetry.append(False)
-    use_symmetry = sum(use_symmetry)
-    if not use_symmetry:
+            use_non_symmetry += 1
+    if use_symmetry!= len(operands) and use_non_symmetry != len(operands):
+        raise TypeError("mixed symmetric and non-symmetric labels found in the subscript, \
+                        please switch to fully non-symmetric or symmetric notation")
+    if use_non_symmetry==len(operands):
         backend = infer_backend(operands[0])
         tmp_operands = [getattr(i, 'array', i) for i in operands]
         return backend.einsum(subscripts, *tmp_operands)
-    elif use_symmetry != len(operands):
-        raise TypeError("mixed symmetric and non-symmetric labels found in the subscript, \
-                        please switch to fully non-symmetric or symmetric notation")
-
+    
     contraction_list = einsum_path(subscripts, *operands)
     operands = [v for v in operands]
     for inds, idx_rm, einsum_str in contraction_list:
