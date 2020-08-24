@@ -57,9 +57,9 @@ def sym_to_irrep_map(sym, backend):
         fill = np.ones(len(idx))
         shape = [len(i) for i in sym_range]
 
-        lib.write_all(delta, idx, fill)
+        lib.put(delta, idx, fill)
     else:
-        lib.write_all(delta, [], [])
+        lib.put(delta, [], [])
     return delta
 
 
@@ -99,7 +99,7 @@ def get_aux_sym_range(sym, idx, phase=1):
     left_idx, right_idx = new_idx, [i for i in range(len(sym_range)) if i not in new_idx]
     nleft, nright = len(left_idx), len(right_idx)
     out_left, out_right = [0,]*2
-    if isinstance(sym_range[0][0], int):
+    if isinstance(sym_range[0][0], (int, np.integer)):
         ndim = 1
     else:
         ndim = len(sym_range[0][0])
@@ -265,10 +265,14 @@ def _fuse_delta(sub, delta_a, delta_b, backend):
     """Generate a new delta tensor by tensor contraction between two input delta tensors a and b"""
     lib = load_lib(backend)
     temp = lib.einsum(sub, delta_a, delta_b)
-    idx = lib.non_zeros(temp)
+    idx = lib.nonzero(temp.ravel())
     delta = lib.zeros(temp.shape)
     fill = np.ones(len(idx))
-    lib.write_single(delta, idx, fill)
+    rank = getattr(lib, "rank", 0)
+    if rank==0:
+        lib.put(delta, idx, fill)
+    else:
+        lib.put(delta, [], [])
     return delta
 
 

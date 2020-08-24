@@ -9,7 +9,7 @@ try:
     import itertools
 except:
     from functools import itertools
-from symtensor.sym import random, einsum
+from symtensor import random, einsum
 
 thresh = 1e-8
 ran =  [0,1]
@@ -20,8 +20,8 @@ nmode = 3
 class DMRGnpTEST(unittest.TestCase):
 
     def test_outprd(self):
-        A = random([no,no,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
-        B = random([nv,nv,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
+        A = random.random([no,no,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
+        B = random.random([nv,nv,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
         C = einsum('ijcxd,abcyd->ijxyab', A, B)
 
         out = np.zeros(C.array.shape)
@@ -33,8 +33,8 @@ class DMRGnpTEST(unittest.TestCase):
         self.assertTrue(np.amax(C.array-out)<thresh)
 
     def test_prd(self):
-        A = random([no,no,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
-        B = random([nv,nv,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
+        A = random.random([no,no,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
+        B = random.random([nv,nv,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
         C = einsum('ijcxd,abcxd->ijab', A, B)
 
         out = np.zeros(C.array.shape)
@@ -46,8 +46,8 @@ class DMRGnpTEST(unittest.TestCase):
         self.assertTrue(np.amax(C.array-out)<thresh)
 
     def test_hprd(self):
-        A = random([no,no,nv,nv,nmode], sym=["++--0", [ran]*4, None, None])
-        B = random([nv,nv,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
+        A = random.random([no,no,nv,nv,nmode], sym=["++--0", [ran]*4, None, None])
+        B = random.random([nv,nv,nv,nmode,nv], sym=["++-0-", [ran]*4, None, None])
         C = einsum('ijcdx,abcxd->ijabx', A, B)
 
         out = np.zeros(C.array.shape)

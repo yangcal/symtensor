@@ -2,15 +2,11 @@
 #
 # Author: Yang Gao <younggao1994@gmail.com>
 #
-from functools import wraps
+import importlib
 
-def load_lib(libname):
-    if libname == 'numpy':
-        import symtensor.backend.numpy_funclib as lib
-    elif libname == 'ctf':
-        import symtensor.backend.ctf_funclib as lib
-    elif libname == 'blas':
-        import symtensor.backend.blas_funclib as lib
-    else:
-        raise ValueError("Library %s not recognized" %libname)
-    return lib
+def load_lib(BACKEND):
+    module_path = 'symtensor.%s.backend'%(BACKEND)
+    try:
+        return importlib.import_module(module_path)
+    except:
+        raise ValueError("backend %s not found, check symtensor.backend"%BACKEND)

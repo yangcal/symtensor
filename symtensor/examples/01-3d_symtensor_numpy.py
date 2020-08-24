@@ -6,7 +6,7 @@
 Simple tensor contraction with 3D symmetry
 '''
 import numpy as np
-from symtensor.sym import tensor, einsum
+from symtensor import array, einsum
 
 def make_kpts(lattice, nmp):
     ks_each_axis = []
@@ -37,6 +37,6 @@ sym = ['++--', [kpts,]*4, None, gvec]
 
 Aarray = np.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
 Barray = np.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
-A = tensor(Aarray, sym, verbose=1)
-B = tensor(Barray, sym, verbose=1)
+A = array(Aarray, sym, verbose=1)
+B = array(Barray, sym, verbose=1)
 out = einsum('ijab,abcd->ijcd', A, B)

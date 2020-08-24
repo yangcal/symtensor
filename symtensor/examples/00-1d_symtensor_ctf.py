@@ -8,7 +8,7 @@ usage: mpirun -np 4 python 00-1d_symtensor_ctf.py
 '''
 
 import numpy as np
-from symtensor.sym_ctf import tensor, einsum
+from symtensor.ctf import array, einsum
 import ctf
 
 ni = np.arange(0,3)
@@ -24,6 +24,6 @@ sym_klm = ['++-', [nk,nl,nm], None, None] # K + L - M = 0
 ijk_array = ctf.random.random([len(ni),len(nj),nbond,nbond,nbond])
 klm_array = ctf.random.random([len(nk),len(nl),nbond,nbond,nbond])
 
-ijk = tensor(ijk_array, sym_ijk, verbose=1)
-klm = tensor(klm_array, sym_klm, verbose=1)
+ijk = array(ijk_array, sym_ijk, verbose=1)
+klm = array(klm_array, sym_klm, verbose=1)
 ijlm = einsum('ijk,klm->ijlm',ijk,klm)
