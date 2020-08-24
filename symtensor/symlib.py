@@ -229,10 +229,10 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
         sym_range = [sym1[1][i] for i in idxa]
         sym_range.append(aux_range)
         if sym1[3] is not None:
-            symq= sym1[3]
+            symq = sym1[3]
         else:
-            sym1[3] = sym2[3]
-        aux_sym = [sign_string, sym_range, None, sym1[3]]
+            symq = sym2[3]
+        aux_sym = [sign_string, sym_range, None, symq]
         delta_tensor.append(symlib.get_irrep_map(aux_sym))
     delta_lst = fuse_delta([delta_strings, delta_tensor], symlib.backend)
     return delta_lst
