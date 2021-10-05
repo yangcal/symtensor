@@ -5,7 +5,8 @@
 
 import unittest
 import numpy
-from symtensor import symlib, random, einsum
+from symtensor import symlib
+from symtensor.cupy import random, einsum
 
 thresh = 1e-8
 sign = {'+':1, '-':-1}
