@@ -3,13 +3,14 @@ from functools import wraps
 from symtensor.sym import (array, einsum, zeros, get_full_shape, \
                           zeros_like, diag, tensor, __all__)
 from . import random
+import numpy
 import cupy
 
 __all__.extend(["random", "fromfunction", "frombatchfunc"])
 def backend_wrapper(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        kwargs['backend'] = 'numpy'
+        kwargs['backend'] = 'cupy'
         return func(*args, **kwargs)
     return wrapper
 
@@ -21,10 +22,13 @@ tensor = backend_wrapper(tensor)
 def fromfunction(func, shape, **kwargs):
     sym = kwargs.pop('sym', None)
     dtype = kwargs.get('dtype', float)
-    out = zeros(shape, sym)
+    out = zeros(shape, sym, dtype=dtype)
     nsym = out.nsym
     if out.nsym==0:
-        out.array = numpy.fromfunction(func, shape, **kwargs)
+        flat_index = numpy.arange(out.array.size)
+        index = numpy.unravel_index(flat_index, shape)
+        trunk_data = func(*index, **kwargs)
+        out.put(flat_index, trunk_data.ravel())
     else:
         kwargs.pop('dtype', None)
         sym_shape = list(out.array.shape[:nsym-1])
