@@ -7,10 +7,14 @@ The library may be installed into a Python environment from the main source dire
 ```sh
 pip install .
 ```
+To test the library
 
-SymTensor may be used with NumPy or [Cyclops Tensor Framework](https://github.com/cyclops-community/ctf) as a backend.
-To import ta given backend into symtensor the command
+SymTensor may be used with NumPy, cuPy, or [Cyclops Tensor Framework](https://github.com/cyclops-community/ctf) as a backend.
+To import a given backend into symtensor the command
 ```sh
 FIXME
 ```
 may be used.
+
+## Example Codes
+
