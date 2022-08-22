@@ -36,6 +36,9 @@ def _unpack_kwargs(**kwargs):
 def is_symtensor(tensor):
     return hasattr(tensor, 'array')
 
+def set_backend(bend):
+    BACKEND = bend
+
 def infer_backend(tensor):
     if is_symtensor(tensor):
         return tensor.lib
@@ -211,7 +214,7 @@ def _einsum(subscripts, *operands):
             C = SYMtensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
             return C
 
-class SYMtensor:
+class tensor:
     def __init__(self, array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
         self.array = array
         self.sym = sym
@@ -451,8 +454,6 @@ class SYMtensor:
         sparse = self.make_dense()
         self.array = self.lib.einsum(sub, sparse, irrep_map)
         sparse = None
-
-tensor = SYMtensor
 
 def einsum(subscripts, *operands):
     newsub = copy.copy(subscripts).replace(' ', '')
