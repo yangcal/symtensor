@@ -2,7 +2,7 @@
 #from functools import wraps
 #from symtensor.sym import (array, einsum, zeros, \
 #                          zeros_like, diag, tensor, __all__)
-from . import random
+#from . import random
 #import numpy
 #import ctf
 

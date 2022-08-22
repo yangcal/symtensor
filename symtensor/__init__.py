@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import importlib
 
-from . import ctf
+#from . import ctf
 from .sym import *
 
 #module_path = 'symtensor.%s'%(BACKEND)

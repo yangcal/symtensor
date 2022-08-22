@@ -20,8 +20,6 @@ from symtensor.tools.path import einsum_path
 
 BACKEND='numpy'
 
-__all__ = ["array", "einsum", "zeros", "zeros_like", "diag", "tensor"]
-
 def _unpack_kwargs(**kwargs):
     valid_kwarg = ["backend", "symlib", "verbose", "stdout"]
     for key in kwargs.keys():
@@ -46,7 +44,7 @@ def infer_backend(tensor):
         return load_lib(tensor.__class__.__module__.split('.')[0])
 
 def array(arr, sym=None, **kwargs):
-    return SYMtensor(arr, sym, **kwargs)
+    return tensor(arr, sym, **kwargs)
 
 def get_full_shape(shape, sym=None):
     if sym is not None:  assert(len(sym[0])==len(shape))
@@ -70,7 +68,7 @@ def zeros_like(a, dtype=None):
     array = lib.zeros(full_shape, dtype)
     return a._as_new_tensor(array)
 
-def _random(shape, sym=None, **kwargs):
+def random(shape, sym=None, **kwargs):
     _backend = _unpack_kwargs(**kwargs)[0]
     lib = load_lib(_backend)
     full_shape = get_full_shape(shape, sym)
@@ -113,7 +111,7 @@ def diag(array, sym=None, **kwargs):
                 if not all(len(i)==array.shape[0] for i in sym[1]):
                     raise ValueError("The first dimension of the array must be equal to the number of symmetry sectors")
                 out = lib.einsum('ki,ij->kij', array, lib.eye(array.shape[-1]))
-                return SYMtensor(out, _sym, symlib=_symlib, verbose=_verbose, stdout=_stdout)
+                return tensor(out, _sym, symlib=_symlib, verbose=_verbose, stdout=_stdout)
             else:
                 raise ValueError("Symmetry not compatible with input array")
 
@@ -211,7 +209,7 @@ def _einsum(subscripts, *operands):
         if out_sym is None:
             return C
         else:
-            C = SYMtensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
+            C = tensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
             return C
 
 class tensor:
@@ -305,7 +303,7 @@ class tensor:
                 sub = sinput + ',' + sa_.upper() + '->' + soutput
                 temp = self.lib.einsum(sub, self.array, irrep_map)
             new_sym = [sign_strings, new_symrange, self.sym[2], self.sym[3]]
-        return SYMtensor(temp, new_sym, self.backend, self.symlib, self.verbose, self.stdout)
+        return tensor(temp, new_sym, self.backend, self.symlib, self.verbose, self.stdout)
 
     def ravel(self):
         return self.array.ravel()
@@ -317,7 +315,7 @@ class tensor:
         lib = self.lib
         if self.ndim == self.array.ndim:
             if preserve_shape:
-                return SYMtensor(lib.diag(lib.diag(self.array)), self.sym, self.backend, self.symlib, self.verbose, self.stdout)
+                return tensor(lib.diag(lib.diag(self.array)), self.sym, self.backend, self.symlib, self.verbose, self.stdout)
             else:
                 return lib.diag(self.array)
         elif self.ndim ==2 and self.shape[-1]==self.shape[-2]:
@@ -353,13 +351,13 @@ class tensor:
         return self._as_new_tensor(self.array.conj())
 
     def __add__(self, x):
-        if isinstance(x, SYMtensor):
+        if isinstance(x, tensor):
             return self._as_new_tensor(self.array+x.array)
         else:
             return self._as_new_tensor(self.array+x)
 
     def __sub__(self, x):
-        if isinstance(x, SYMtensor):
+        if isinstance(x, tensor):
             return self._as_new_tensor(self.array-x.array)
         else:
             return self._as_new_tensor(self.array-x)
@@ -373,7 +371,7 @@ class tensor:
     __rmul__ = __mul__
 
     def __div__(self, x):
-        if isinstance(x, SYMtensor):
+        if isinstance(x, tensor):
             return self._as_new_tensor(self.array/x.array)
         else:
             return self._as_new_tensor(self.array/x)
