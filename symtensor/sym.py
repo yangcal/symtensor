@@ -33,7 +33,6 @@ def infer_backend(A):
     else:
         print(type(A))
         raise ValueError("SymTensor cannot infer backend")
-        
 
 def array(arr, sym=None):
     """

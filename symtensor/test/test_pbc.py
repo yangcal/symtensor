@@ -122,6 +122,7 @@ class PBCNUMPYTest(unittest.TestCase):
         Z = st.einsum('KCADkcad,IDid->AKICakic', C_dense, A_dense)
         Z = st.einsum('AKICakic,AKIC->AKIakic', Z, Z1.get_irrep_map())
 
+
         diff = (Z1-Z).norm() / np.sqrt(Z.size)
         self.assertTrue(diff<thresh)
 
@@ -135,12 +136,14 @@ class PBCNUMPYTest(unittest.TestCase):
         X = st.einsum('KCLDkcld,ILCDilcd->KIki', A_dense, B_dense)
         X = st.einsum('KIki,KI->Kki', X, X1.get_irrep_map())
 
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = st.einsum('kdac,ikcd->ia', C, B)
         Y = st.einsum('KDACkdac,IKCDikcd->IAia', C_dense, B_dense)
         Y = st.einsum('IAia,IA->Iia', Y, Y1.get_irrep_map())
+
 
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
@@ -155,6 +158,7 @@ class PBCNUMPYTest(unittest.TestCase):
         X = st.einsum('KCLDkcld,IJCDijcd->KLIJklij', B_dense, C_dense)
         X = st.einsum('KLIJklij,KLIJ->KLIklij', X, X1.get_irrep_map())
 
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
@@ -167,6 +171,7 @@ class PBCNUMPYTest(unittest.TestCase):
         Z1 = st.einsum('abcd,ijcd->ijab', D, C)
         Z = st.einsum('ABCDabcd,IJCDijcd->IJABijab', D_dense, C_dense)
         Z = st.einsum('IJABijab,IJAB->IJAijab', Z, Z1.get_irrep_map())
+
 
         diff = (Z1-Z).norm() / np.sqrt(Z.size)
         self.assertTrue(diff<thresh)
@@ -182,12 +187,14 @@ class PBCNUMPYTest(unittest.TestCase):
         X = st.einsum('KLIJklij,KLBklb->IJBijb', klij_dense, klb_dense)
         X = st.einsum('IJBijb,IJB->IJijb', X, X1.get_irrep_map())
 
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = st.einsum('lbdj,ild->ijb', lbdj, ild)
         Y = st.einsum('LBDJlbdj,ILDild->IJBijb', lbdj_dense, ild_dense)
         Y = st.einsum('IJBijb,IJB->IJijb', Y, Y1.get_irrep_map())
+
 
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
@@ -204,12 +211,14 @@ class PBCNUMPYTest(unittest.TestCase):
         X = st.einsum('LKDClkdc,KLDkld->Cc', lkdc_dense, kld_dense)
         X = st.einsum('Cc,C->c', X, X1.get_irrep_map())
 
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = st.einsum('kldc,kld->c', kldc, kld)
         Y = st.einsum('KLDCkldc,KLDkld->Cc', kldc_dense, kld_dense)
         Y = st.einsum('Cc,C->c', Y, Y1.get_irrep_map())
+
 
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
@@ -225,6 +234,7 @@ class PBCNUMPYTest(unittest.TestCase):
         X = st.einsum('KIki,Kk->Ii', ki_dense, k_dense)
         X = st.einsum('Ii,I->i', X, X1.get_irrep_map())
 
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
@@ -237,6 +247,7 @@ class PBCNUMPYTest(unittest.TestCase):
         X1 = st.einsum('ld,ild->i', ld, ild)
         X = st.einsum('LDld,ILDild->Ii', ld_dense, ild_dense)
         X = st.einsum('Ii,I->i', X, X1.get_irrep_map())
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
@@ -249,6 +260,7 @@ class PBCNUMPYTest(unittest.TestCase):
         X1 = st.einsum('c,ijcb->ijb', c, ijcb)
         X = st.einsum('Cc,IJCBijcb->IJBijb', c_dense, ijcb_dense)
         X = st.einsum('IJBijb,IJB->IJijb',X,X1.get_irrep_map())
+
 
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
@@ -265,12 +277,14 @@ class PBCNUMPYTest(unittest.TestCase):
         X = st.einsum('BDbd,IJDijd->IJBijb', bd_dense, ijd_dense)
         X = st.einsum('IJBijb,IJB->IJijb', X, X1.get_irrep_map())
 
+
         diff = (X1-X).norm() / np.sqrt(X.size)
         self.assertTrue(diff<thresh)
 
         Y1 = st.einsum('ki,kjb->ijb', ki, kjb)
         Y = st.einsum('KIki,KJBkjb->IJBijb', ki_dense, kjb_dense)
         Y = st.einsum('IJBijb,IJB->IJijb', Y, Y1.get_irrep_map())
+
         diff = (Y1-Y).norm() / np.sqrt(Y.size)
         self.assertTrue(diff<thresh)
 
@@ -282,6 +296,7 @@ class PBCNUMPYTest(unittest.TestCase):
 
         X = st.einsum('IJABijab,IJBAijba->', ijab_dense, ijba_dense)
         X1 = st.einsum('ijab,ijba->', ijab, ijba)
+
         diff = abs(X-X1)
         self.assertTrue(diff<thresh)
 
