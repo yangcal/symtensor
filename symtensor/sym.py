@@ -272,6 +272,19 @@ def _einsum(subscripts, *operands):
             return C
 
 class tensor:
+    """
+    Symmetric tensor class. Stores group symmetric tensors in a reduced represented, along with symmetry information.
+
+    Attributes
+    ----------
+    array: tensorbackends.interface.Tensor
+        Tensor data, represented as numpy array or CuPy/Cyclops object, wrapped as a tensorbackends Tensor. The tensor is order nP+nS-1 where nP is the order of the represented tensor object and nS is the numbef of modes associated with the symmetry group.
+
+    sym: [string, list(int), int, int]
+        sym[0] is a string of size equal nP indicating whether each mode is nonsymmetric (0), symmetric with positive sign (+), symmetric with negative sign (-)
+        sym[2] defines the 
+
+    """
     def __init__(self, array, sym=None, slib=None, tb=tn):
         self.array = array
         self.sym = sym
