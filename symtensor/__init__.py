@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 import importlib
 
-from . import ctf
 from .sym import *
+from .symlib import *
 
 #module_path = 'symtensor.%s'%(BACKEND)
 #module_handle = importlib.import_module(module_path)

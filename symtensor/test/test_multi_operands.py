@@ -5,8 +5,7 @@
 
 import unittest
 import numpy
-from symtensor import symlib
-from symtensor import random, einsum
+import symtensor as st
 
 thresh = 1e-8
 sign = {'+':1, '-':-1}
@@ -30,33 +29,33 @@ class MULTIOPERANDSTEST(unittest.TestCase):
         sym4 = ['++-', [ni,nn,np], None, None]
 
 
-        ijk = random.random([nbond,]*3, sym1)
-        klm = random.random([nbond,]*3, sym2)
-        nojl = random.random([nbond,]*4, sym3)
-        inp = random.random([nbond,]*3, sym4)
+        ijk = st.random([nbond,]*3, sym1)
+        klm = st.random([nbond,]*3, sym2)
+        nojl = st.random([nbond,]*4, sym3)
+        inp = st.random([nbond,]*3, sym4)
 
-        pom = einsum('ijk,klm,nojl,inp->pom', ijk, klm, nojl, inp)
+        pom = st.einsum('ijk,klm,nojl,inp->pom', ijk, klm, nojl, inp)
 
-        ijlm = einsum('ijk,klm->ijlm',ijk,klm)
-        inom = einsum('ijlm,nojl->inom', ijlm, nojl)
-        pom1 = einsum('inom,inp->pom', inom, inp)
+        ijlm = st.einsum('ijk,klm->ijlm',ijk,klm)
+        inom = st.einsum('ijlm,nojl->inom', ijlm, nojl)
+        pom1 = st.einsum('inom,inp->pom', inom, inp)
         self.assertTrue((pom-pom1).norm()<thresh)
 
     def test_cc(self):
         sym1 = ["+-", [[-1,1]]*2, None, None]
         sym2 = ["++--", [[-1,1]]*4, None, None]
 
-        ie = random.random([nbond]*2, sym1)
-        ijab = random.random([nbond]*4, sym2)
-        abcd = random.random([nbond]*4, sym2)
+        ie = st.random([nbond]*2, sym1)
+        ijab = st.random([nbond]*4, sym2)
+        abcd = st.random([nbond]*4, sym2)
 
-        ejcd = einsum('ie,ijab,abcd->ejcd', ie, ijab, abcd)
+        ejcd = st.einsum('ie,ijab,abcd->ejcd', ie, ijab, abcd)
 
-        ejab = einsum('ie,ijab->ejab', ie, ijab)
-        ejcd1 = einsum('ejab,abcd->ejcd', ejab, abcd)
+        ejab = st.einsum('ie,ijab->ejab', ie, ijab)
+        ejcd1 = st.einsum('ejab,abcd->ejcd', ejab, abcd)
 
-        ijcd = einsum('ijab,abcd->ijcd', ijab, abcd)
-        ejcd2= einsum('ie,ijcd->ejcd', ie, ijcd)
+        ijcd = st.einsum('ijab,abcd->ijcd', ijab, abcd)
+        ejcd2= st.einsum('ie,ijcd->ejcd', ie, ijcd)
 
         self.assertTrue((ejcd-ejcd1).norm()<thresh)
         self.assertTrue((ejcd-ejcd2).norm()<thresh)

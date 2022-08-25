@@ -276,7 +276,7 @@ def _fuse_delta(sub, delta_a, delta_b, backend):
     return delta
 
 
-class SYMLIB:
+class symlib:
     def __init__(self, backend):
         self.backend = backend
         self.lib = load_lib(self.backend)
@@ -319,7 +319,7 @@ class SYMLIB:
     make_irrep_map_lst = make_irrep_map_lst
 
     def copy(self):
-        newcopy = SYMLIB(self.backend)
+        newcopy = symlib(self.backend)
         newcopy.sym_lst = copy.copy(self.sym_lst)
         newcopy.irrep_map_lst =  copy.copy(self.irrep_map_lst)
         return newcopy

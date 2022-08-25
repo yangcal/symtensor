@@ -11,44 +11,73 @@ import sys
 import numpy as np
 import time
 from symtensor.settings import load_lib
-from symtensor.symlib import SYMLIB
-from symtensor import symlib
+from symtensor.symlib import *
 from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills, logger
 from symtensor.tools.path import einsum_path
 
+import tensorbackends as tbs
 
-BACKEND='numpy'
+tn = tbs.get('numpy')
 
-__all__ = ["array", "einsum", "zeros", "zeros_like", "diag", "tensor"]
+def is_symtensor(A):
+    return isinstance(A,tensor)
 
-def _unpack_kwargs(**kwargs):
-    valid_kwarg = ["backend", "symlib", "verbose", "stdout"]
-    for key in kwargs.keys():
-        if key not in valid_kwarg:
-            raise ValueError("%s not a valid kwarg"%(key))
-    _backend = kwargs.get("backend", BACKEND)
-    _symlib = kwargs.get("symlib", None)
-    _verbose = kwargs.get("verbose", 0)
-    _stdout = kwargs.get("stdout", None)
-    return _backend, _symlib, _verbose, _stdout
-
-def is_symtensor(tensor):
-    return hasattr(tensor, 'array')
-
-def set_backend(bend):
-    BACKEND = bend
-
-def infer_backend(tensor):
-    if is_symtensor(tensor):
-        return tensor.lib
+def infer_backend(A):
+    if is_symtensor(A):
+        return A.array.backend
+    elif isinstance(A,np.ndarray):
+        return tn
+    elif isinstance(A,tbs.interface.Tensor):
+        return A.backend
     else:
-        return load_lib(tensor.__class__.__module__.split('.')[0])
+        print(type(A))
+        raise ValueError("SymTensor cannot infer backend")
+        
 
-def array(arr, sym=None, **kwargs):
-    return SYMtensor(arr, sym, **kwargs)
+def array(arr, sym=None):
+    """
+    Create a copy of a symmetric tensor based on tensor data and symmetry
+
+    Parameters
+    ----------
+    arr: tensor_like
+        Input tensor like object
+
+    sym: [string, list(int), int, int]
+        Specification of symmetry, refer to main tensor constructor for details
+
+    Returns
+    -------
+    output: tensor
+        A tensor object with specified symmetry.
+    """
+    return tensor(arr, sym)
+
 
 def get_full_shape(shape, sym=None):
+    """
+    Return shape of reduced form of tensor given shape of a symmetry block and the symmetry specification
+
+    Parameters
+    ----------
+    shape: list(int)
+        Shape of symmetric block
+
+    sym: [string, list(int), int, int]
+        Specification of symmetry, refer to main tensor constructor for details
+
+    Returns
+    -------
+    output: list(int)
+        Shape of the reduced form, with symmetry sectors stored first
+
+    Examples
+    --------
+    >>> import symtensor as st
+    >>> st.get_full_shape([3,4,5],['++-',[2,2,2],0,2])
+    (2,2,3,4,5)
+    """
     if sym is not None:  assert(len(sym[0])==len(shape))
     if sym is None:
         return shape
@@ -56,32 +85,61 @@ def get_full_shape(shape, sym=None):
         full_shape = [len(i) for i in sym[1][:-1]] + list(shape)
         return tuple(full_shape)
 
-def zeros(shape, sym=None, dtype=float, **kwargs):
-    _backend = _unpack_kwargs(**kwargs)[0]
-    lib = load_lib(_backend)
+def zeros(shape, sym=None, dtype=float, tb=tn):
+    """
+    Create a zero symmetric tensor with specified symmetry
+
+    Parameters
+    ----------
+    shape: list(int)
+        Shape of each symmetric tensor block
+
+    sym: [string, list(int), int, int]
+        Specification of symmetry, refer to main tensor constructor for details
+
+    dtype: type
+        Specification of tensor element type
+
+    tb: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
+
+    Returns
+    -------
+    output: tensor
+        A zeroed out tensor object with specified symmetry.
+    """
     full_shape = get_full_shape(shape, sym)
-    arr = lib.zeros(full_shape, dtype)
-    return array(arr, sym, **kwargs)
+    arr = tn.zeros(full_shape, dtype)
+    return array(arr, sym)
 
 def zeros_like(a, dtype=None):
-    if dtype is None: dtype=a.dtype
-    lib = a.lib
-    full_shape = a.array.shape
-    array = lib.zeros(full_shape, dtype)
-    return a._as_new_tensor(array)
+    """
+    Create a zero symmetric tensor with same size and symmetry as given tensor
 
-def _random(shape, sym=None, **kwargs):
-    _backend = _unpack_kwargs(**kwargs)[0]
-    lib = load_lib(_backend)
+    Parameters
+    ----------
+    a: symtensor.tensor
+        Symmetric tensor to copy
+
+    dtype: type
+        Specification of tensor element type
+
+    Returns
+    -------
+    output: tensor
+        A zeroed out tensor object with same properties as a
+    """
+    if dtype is None: dtype=a.dtype
+    return zeros(a.shape, a.sym, dtype, a.array.backend)
+
+def random(shape, sym=None, tb=tn):
     full_shape = get_full_shape(shape, sym)
-    arr = lib.random.random(full_shape)
-    tensor = array(arr, sym, **kwargs)
+    arr = tn.random.random(full_shape)
+    tensor = array(arr, sym)
     tensor.enforce_sym()
     return tensor
 
-def diag(array, sym=None, **kwargs):
-    _backend, _symlib, _verbose, _stdout = _unpack_kwargs(**kwargs)
-    lib = load_lib(_backend)
+def diag(array, sym=None, tb=tn):
     IS_SYMTENSOR = is_symtensor(array)
     if IS_SYMTENSOR:
         nsym = array.nsym
@@ -103,26 +161,28 @@ def diag(array, sym=None, **kwargs):
         return array.diagonal()
     else:
         if nsym == 0 or nsym==1:
-            return lib.diag(array)
+            return tb.diag(array)
         else:
             if array.ndim==3:
                 assert(array.shape[1]==array.shape[2])
-                out = lib.einsum('kii->ki', array)
+                out = tb.einsum('kii->ki', array)
                 return out
             elif array.ndim==2:
                 if not all(len(i)==array.shape[0] for i in sym[1]):
                     raise ValueError("The first dimension of the array must be equal to the number of symmetry sectors")
-                out = lib.einsum('ki,ij->kij', array, lib.eye(array.shape[-1]))
-                return SYMtensor(out, _sym, symlib=_symlib, verbose=_verbose, stdout=_stdout)
+                raise ValueError("Cannot perform diag with specified parameters")
+                #FIXME: code below does not make sense, _sym needs to be defined
+                #out = tb.einsum('ki,ij->kij', array, tb.eye(array.shape[-1]))
+                #return tensor(out, _sym, tb=tb)
             else:
                 raise ValueError("Symmetry not compatible with input array")
 
-def _transform(Aarray, path, orb_label, lib):
+def _transform(Aarray, path, orb_label, tb):
     nop = len(path)
     if nop == 0: return Aarray
     for ki, (sym_label, irrep_map) in enumerate(path):
         subscript  = utills.make_subscript(sym_label, [orb_label]+['']*(len(sym_label)-2)+[orb_label], full=False)
-        Aarray = lib.einsum(subscript, Aarray, irrep_map)
+        Aarray = tb.einsum(subscript, Aarray, irrep_map)
     return Aarray
 
 def _einsum(subscripts, *operands):
@@ -148,8 +208,6 @@ def _einsum(subscripts, *operands):
             out = lib.einsum(subscripts, op_A, op_B.array)
             return out
     cput0 = cput1 = (time.clock(), time.time())
-    verbose = max(op_A.verbose, op_B.verbose)
-    op_A.verbose = op_B.verbose = verbose
     logger.log(op_A, "Contraction:%s"%subscripts)
     if op_A.sym is None:
         # for non-symmetric tensor, no symmetry transformation is needed
@@ -161,13 +219,13 @@ def _einsum(subscripts, *operands):
         if subscripts[-2:]=='->':
             return out
         else:
-            return array(out, outsym, backend=op_A.backend, verbose=verbose, stdout=op_A.stdout)
+            return array(out, outsym, backend=op_A.backend)
     else:
         if op_A.sym[3] is not None and op_B.sym[3] is not None:
             # modulus needs to the same for the two operands
             assert(np.allclose(op_A.sym[3], op_B.sym[3]))
 
-        symlib = op_A.symlib + op_B.symlib
+        my_symlib = op_A.symlib + op_B.symlib
 
         if 'q' in subscripts.lower():
             raise ValueError("q index is reserved for auxillary index, please change the symmetry label in einsum subscript")
@@ -194,7 +252,7 @@ def _einsum(subscripts, *operands):
             symbols = s_A + s_B
             for ki, i in enumerate(symbols.upper()):
                 bond_dict[i] = shape[ki]
-            irrep_map_lst = symlib.make_irrep_map_lst(op_A._sym, op_B._sym, sym_string_lst) # generate all irrep_maps
+            irrep_map_lst = make_irrep_map_lst(my_symlib, op_A._sym, op_B._sym, sym_string_lst) # generate all irrep_maps
             A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind, bond_dict)
             cput1 = logger.timer_debug(op_A, "finding contraction path", *cput1)
             A = _transform(A, A_path, s_A, lib)
@@ -207,21 +265,23 @@ def _einsum(subscripts, *operands):
             C = _transform(C, C_path, s_C, lib)
             cput1 = logger.timer_debug(op_A, "transforming onput %s"%(s_C), *cput1)
 
-        op_A.symlib = op_B.symlib = symlib
+        op_A.symlib = op_B.symlib = my_symlib
         if out_sym is None:
             return C
         else:
-            C = SYMtensor(C, out_sym, op_A.backend, symlib, verbose=verbose, stdout=op_A.stdout)
+            C = tensor(C, out_sym)
             return C
 
 class tensor:
-    def __init__(self, array, sym=None, backend=BACKEND, symlib=None, verbose=0, stdout=None):
+    def __init__(self, array, sym=None, slib=None, tb=tn):
         self.array = array
         self.sym = sym
         self._sym = utills._cut_non_sym_sec(sym)
-        self.backend = backend
         if sym is None:
-            self.symlib = symlib
+            if slib is None:
+              self.symlib = symlib(tb)
+            else:
+              self.symlib = slib
             self.ndim = self.array.ndim
             self.shape = self.array.shape
         else:
@@ -230,13 +290,10 @@ class tensor:
                 self.shape = self.array.shape[self.nsym-1:]
             else:
                 self.shape = self.array.shape
-            if symlib is None:
-                self.symlib = SYMLIB(self.backend)
+            if slib is None:
+                self.symlib = symlib(tb)
             else:
-                self.symlib = symlib
-        if stdout is None: stdout = sys.stdout
-        self.stdout = stdout
-        self.verbose = verbose
+                self.symlib = slib
 
     def __getattr__(self, item):
         if hasattr(self.array, item):
@@ -246,7 +303,7 @@ class tensor:
 
     @property
     def lib(self):
-        return load_lib(self.backend)
+        return self.array.backend
 
     @property
     def nsym(self):
@@ -271,9 +328,8 @@ class tensor:
         return self.symlib.get_irrep_map(sym)
 
     def _as_new_tensor(self, x):
-        newtensor = array(x, self.sym, backend=self.backend, \
-                          symlib=self.symlib, verbose=self.verbose, \
-                          stdout=self.stdout)
+        newtensor = tensor(x, self.sym, tb=self.array.backend, \
+                          slib=self.symlib)
         return newtensor
 
     def transpose(self, *axes):
@@ -305,7 +361,7 @@ class tensor:
                 sub = sinput + ',' + sa_.upper() + '->' + soutput
                 temp = self.lib.einsum(sub, self.array, irrep_map)
             new_sym = [sign_strings, new_symrange, self.sym[2], self.sym[3]]
-        return SYMtensor(temp, new_sym, self.backend, self.symlib, self.verbose, self.stdout)
+        return tensor(temp, new_sym, self.symlib, tb=tb)
 
     def ravel(self):
         return self.array.ravel()
@@ -317,7 +373,7 @@ class tensor:
         lib = self.lib
         if self.ndim == self.array.ndim:
             if preserve_shape:
-                return SYMtensor(lib.diag(lib.diag(self.array)), self.sym, self.backend, self.symlib, self.verbose, self.stdout)
+                return tensor(lib.diag(lib.diag(self.array)), self.sym, self.symlib, tb=self.array.backend)
             else:
                 return lib.diag(self.array)
         elif self.ndim ==2 and self.shape[-1]==self.shape[-2]:
@@ -353,13 +409,13 @@ class tensor:
         return self._as_new_tensor(self.array.conj())
 
     def __add__(self, x):
-        if isinstance(x, SYMtensor):
+        if isinstance(x, tensor):
             return self._as_new_tensor(self.array+x.array)
         else:
             return self._as_new_tensor(self.array+x)
 
     def __sub__(self, x):
-        if isinstance(x, SYMtensor):
+        if isinstance(x, tensor):
             return self._as_new_tensor(self.array-x.array)
         else:
             return self._as_new_tensor(self.array-x)
@@ -373,7 +429,7 @@ class tensor:
     __rmul__ = __mul__
 
     def __div__(self, x):
-        if isinstance(x, SYMtensor):
+        if isinstance(x, tensor):
             return self._as_new_tensor(self.array/x.array)
         else:
             return self._as_new_tensor(self.array/x)
@@ -420,7 +476,7 @@ class tensor:
         n0sym = new_symbol.count('0')
         nsym = len(new_symbol) - n0sym
         if arr.ndim == 2*nsym-1+n0sym:
-            return array(arr, new_sym, backend=self.backend)
+            return array(arr, new_sym, tb=arr.backend)
         else:
             return arr
 

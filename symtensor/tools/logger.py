@@ -4,6 +4,7 @@
 #
 import sys
 import time
+VERBOSE = 0
 QUIET = 0
 TIMER_LEVEL = 1
 TIMER_DEBUG = 2
@@ -26,14 +27,14 @@ def flush(rec, msg, *args):
     rec.stdout.flush()
 
 def log(rec, msg, *args):
-    if rec.verbose > QUIET:
+    if VERBOSE > QUIET:
         flush(rec, msg, *args)
 
 def timer(rec, msg, cpu0=None, wall0=None):
     if cpu0 is None: cpu0 = rec._t0
     if wall0:
         rec._t0, rec._w0 = time.clock(), time.time()
-        if rec.verbose >= TIMER_LEVEL:
+        if VERBOSE >= TIMER_LEVEL:
             flush(rec, '    CPU time for %s %9.2f sec, wall time %9.2f sec'
                   % (msg, rec._t0-cpu0, rec._w0-wall0))
         return rec._t0, rec._w0
@@ -42,7 +43,7 @@ def timer_debug(rec, msg, cpu0=None, wall0=None):
     if cpu0 is None: cpu0 = rec._t0
     if wall0:
         rec._t0, rec._w0 = time.clock(), time.time()
-        if rec.verbose >= TIMER_DEBUG:
+        if VERBOSE >= TIMER_DEBUG:
             flush(rec, '    CPU time for %s %9.2f sec, wall time %9.2f sec'
                   % (msg, rec._t0-cpu0, rec._w0-wall0))
         return rec._t0, rec._w0
