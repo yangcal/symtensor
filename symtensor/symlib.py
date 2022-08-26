@@ -3,25 +3,36 @@
 # Author: Yang Gao <younggao1994@gmail.com>
 #
 '''
-Symlib, internal object for generating delta tensors
+Routines for generating delta tensors (irrep maps) and an object for caching them
 '''
 
-from symtensor.settings import load_lib
 from symtensor.tools import utills
 from symtensor.misc import DUMMY_STRINGS
 import itertools
 import numpy as np
 import copy
-
+#tolerance for equivalence checks
 SYM_TOL=1e-6
+#map from symmetry signs to ints
 sign = {'+':1,'-':-1}
 
+"""
+Get irrep map object for a symmetry
+
+Parameters
+----------
+sym: [string, list(int), int, int]
+    Symmetry to represent as irrep map, refer to main tensor constructor for specification
+
+Returns
+----------
+tensor representing symmetry
+"""
 def sym_to_irrep_map(sym, backend):
-    lib = load_lib(backend)
-    rank = getattr(lib, "rank", 0)
+    rank = getattr(backend, "rank", 0)
     sign_string, sym_range, rhs, modulus = utills._cut_non_sym_sec(sym)
     shape = [len(i) for i in sym_range]
-    delta = lib.zeros(shape)
+    delta = backend.zeros(shape)
     if isinstance(sym_range[0][0], (int, np.integer)):
         ndim = 1
     else:
@@ -57,9 +68,9 @@ def sym_to_irrep_map(sym, backend):
         fill = np.ones(len(idx))
         shape = [len(i) for i in sym_range]
 
-        lib.put(delta, idx, fill)
+        backend.put(delta, idx, fill)
     else:
-        lib.put(delta, [], [])
+        backend.put(delta, [], [])
     return delta
 
 
@@ -186,20 +197,20 @@ def check_sym_equal(sym1, sym2):
     else:
         return (EQUAL, None)
 
-def fuse_symlib(symlib1, symlib2):
-    if symlib1 is None:
-        return symlib2
-    elif symlib2 is None:
-        return symlib1
-    fused_lib = symlib1.copy()
-    for ki, i in enumerate(symlib2.sym_lst):
-        SYM_INCLUDED = [check_sym_equal(symi, i)[0] for symi in symlib1.sym_lst]
+def fuse_symbackend(symbackend1, symbackend2):
+    if symbackend1 is None:
+        return symbackend2
+    elif symbackend2 is None:
+        return symbackend1
+    fused_backend = symbackend1.copy()
+    for ki, i in enumerate(symbackend2.sym_lst):
+        SYM_INCLUDED = [check_sym_equal(symi, i)[0] for symi in symbackend1.sym_lst]
         if not any(SYM_INCLUDED):
-            fused_lib.sym_lst.append(i)
-            fused_lib.irrep_map_lst.append(symlib2.irrep_map_lst[ki])
-    return fused_lib
+            fused_backend.sym_lst.append(i)
+            fused_backend.irrep_map_lst.append(symbackend2.irrep_map_lst[ki])
+    return fused_backend
 
-def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
+def make_irrep_map_lst(symbackend, sym1, sym2, sym_string_lst):
     sym1_ = utills._cut_non_sym_sec(sym1)
     sym2_ = utills._cut_non_sym_sec(sym2)
     sign_string1, sym_range1, rhs1, modulus1 = sym1_
@@ -210,7 +221,7 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
     res_A = set(s_A) - set(contracted)
     res_B = set(s_B) - set(contracted)
     delta_strings = [s_A, s_B]
-    delta_tensor = [symlib.get_irrep_map(sym1_), symlib.get_irrep_map(sym2_)]
+    delta_tensor = [symbackend.get_irrep_map(sym1_), symbackend.get_irrep_map(sym2_)]
     if len(contracted) > 1 and len(res_A)>1 and len(res_B)>1:
         # when more than two symmetry sectors are contracted out and the delta does not exist, auxillary index iss generated
         s_q = ''.join(contracted) + 'Q'
@@ -233,8 +244,8 @@ def make_irrep_map_lst(symlib, sym1, sym2, sym_string_lst):
         else:
             symq = sym2[3]
         aux_sym = [sign_string, sym_range, None, symq]
-        delta_tensor.append(symlib.get_irrep_map(aux_sym))
-    delta_lst = fuse_delta([delta_strings, delta_tensor], symlib.backend)
+        delta_tensor.append(symbackend.get_irrep_map(aux_sym))
+    delta_lst = fuse_delta([delta_strings, delta_tensor], symbackend.backend)
     return delta_lst
 
 def fuse_delta(delta_lst, backend):
@@ -263,47 +274,107 @@ def fuse_delta(delta_lst, backend):
 
 def _fuse_delta(sub, delta_a, delta_b, backend):
     """Generate a new delta tensor by tensor contraction between two input delta tensors a and b"""
-    lib = load_lib(backend)
-    temp = lib.einsum(sub, delta_a, delta_b)
-    idx = lib.nonzero(temp.ravel())
-    delta = lib.zeros(temp.shape)
+    temp = backend.einsum(sub, delta_a, delta_b)
+    idx = backend.nonzero(temp.ravel())
+    delta = backend.zeros(temp.shape)
     fill = np.ones(len(idx))
-    rank = getattr(lib, "rank", 0)
+    rank = getattr(backend, "rank", 0)
     if rank==0:
-        lib.put(delta, idx, fill)
+        backend.put(delta, idx, fill)
     else:
-        lib.put(delta, [], [])
+        backend.put(delta, [], [])
     return delta
 
 
-class symlib:
+class irrep_map_cache:
+    """
+    Class for generating "irrep map" tensors, which represent a particular symmetry object. Caches these objects so they need not be reconstructed repeatedly during iterative computation.
+
+    Attributes
+    ----------
+    backend: tensorbackends object
+        Wrapper for numpy/CuPy/Cyclops to represent irrep map tensors in this cache
+
+    sym_lst: list of [string, list(int), int, int]
+        Symmetries to represent as irrep map, refer to main tensor constructor for specification of each symmetry
+
+    irrep_map_list: list of tensors
+        Tensors representing irrep maps corresponding to each symmetry in sym_lst, represented with the given backend object
+    """
+
+    """
+    Constructor
+
+    Parameters
+    ----------
+    backend: tensorbackends object
+        Wrapper for numpy/CuPy/Cyclops to represent irrep map tensors in this cache
+    """
     def __init__(self, backend):
         self.backend = backend
-        self.lib = load_lib(self.backend)
         self.sym_lst = []
         self.irrep_map_lst = []
 
+    """
+    Adds symmetries to cache / constructs irrep
+
+    Parameters
+    ----------
+    *sym: list of [string, list(int), int, int]
+        Symmetries to represent as irrep map, refer to main tensor constructor for specification of each symmetry
+    """
     def update(self, *sym):
         for i in sym:
             self._update(i)
         return self
 
+    """
+    Add symmetry to cache / constructs irrep
+
+    Parameters
+    ----------
+    sym: [string, list(int), int, int]
+        Symmetry to represent as irrep map, refer to main tensor constructor for specification
+    """
     def _update(self, sym):
         sym_ = utills._cut_non_sym_sec(sym)
-        SYM_INCLUDED = [self.check_sym_equal(symi, sym_)[0] for symi in self.sym_lst]
+        SYM_INCLUDED = [check_sym_equal(symi, sym_)[0] for symi in self.sym_lst]
         if not any(SYM_INCLUDED):
             self.sym_lst.append(sym_)
             irrep_map = sym_to_irrep_map(sym_, self.backend)
             self.irrep_map_lst.append(irrep_map)
-        return self
 
-    def __add__(self, symlib2):
-        return fuse_symlib(self, symlib2)
+    """
+    Merge with another irrep map cache
 
+    Parameters
+    ----------
+    symbackend2: irrep_map_cache
+        Another cache to merge with
+
+    Returns
+    ----------
+    new irrep_map_cache object containing irrep maps in this cache and the given cache
+    """
+    def __add__(self, symbackend2):
+        return fuse_symbackend(self, symbackend2)
+
+    """
+    Get irrep map object for a symmetry
+
+    Parameters
+    ----------
+    sym: [string, list(int), int, int]
+        Symmetry to represent as irrep map, refer to main tensor constructor for specification
+
+    Returns
+    ----------
+    tensor representing symmetry
+    """
     def get_irrep_map(self, sym):
         SYM_INCLUDED=False
         for idx, symi in enumerate(self.sym_lst):
-            EQUAL, order = self.check_sym_equal(symi, sym)
+            EQUAL, order = check_sym_equal(symi, sym)
             if EQUAL:
                 SYM_INCLUDED=True
                 break
@@ -318,11 +389,11 @@ class symlib:
 
     make_irrep_map_lst = make_irrep_map_lst
 
+    """
+    Return copy of self
+    """
     def copy(self):
-        newcopy = symlib(self.backend)
+        newcopy = irrep_map_cache(self.backend)
         newcopy.sym_lst = copy.copy(self.sym_lst)
         newcopy.irrep_map_lst =  copy.copy(self.irrep_map_lst)
         return newcopy
-
-    def check_sym_equal(self, sym1, sym2):
-        return check_sym_equal(sym1, sym2)

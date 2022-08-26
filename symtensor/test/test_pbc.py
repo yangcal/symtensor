@@ -51,7 +51,6 @@ sym_chem = ['+-+-', [kpts,]*4, None, gvec]
 sym_t1 = ['+-',[kpts,]*2, None, gvec]
 sym_eom = ['++-', [kpts,]*3, kpts[kshift], gvec]
 sym_s = ['+', [kpts], kpts[kshift], gvec]
-
 class PBCNUMPYTest(unittest.TestCase):
 
     def test_222(self):

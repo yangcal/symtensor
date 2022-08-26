@@ -29,8 +29,8 @@ class DMRGnpTEST(unittest.TestCase):
         # symtensor contraction
         sym1 = ['++-', [ni,nj,nk], None, None]
         sym2 = ['++-', [nk,nl,nm], None, None]
-        ijk = st.random([nbond,]*3, sym1, tb=tb)
-        klm = st.random([nbond,]*3, sym2, tb=tb)
+        ijk = st.random([nbond,]*3, sym1, backend=tb)
+        klm = st.random([nbond,]*3, sym2, backend=tb)
         ijlm = st.einsum('ijk,klm->ijlm',ijk,klm)
         # sparse tensor contraction
         ijk_dense, klm_dense = ijk.make_dense(), klm.make_dense()
@@ -43,8 +43,8 @@ class DMRGnpTEST(unittest.TestCase):
         numpy.random.seed(3)
         sym1 = ['+++-', [ni,nj,nl,nm], None, None]
         sym2 = ['++--', [nn,no,nj,nl], None, None]
-        ijlm = st.random([nbond,]*4, sym1, tb=tb)
-        nojl = st.random([nbond,]*4, sym2, tb=tb)
+        ijlm = st.random([nbond,]*4, sym1, backend=tb)
+        nojl = st.random([nbond,]*4, sym2, backend=tb)
         inom = st.einsum('ijlm,nojl->inom', ijlm, nojl)
         equal = check_sym_equal(sym1, sym2)
 
@@ -58,8 +58,8 @@ class DMRGnpTEST(unittest.TestCase):
     def test_433(self):
         sym1 = ['+++-', [ni,nn,no,nm], None, None]
         sym2 = ['++-', [ni,nn,np], None, None]
-        inom = st.random([nbond,]*4, sym1, tb=tb)
-        inp = st.random([nbond,]*3, sym2, tb=tb)
+        inom = st.random([nbond,]*4, sym1, backend=tb)
+        inp = st.random([nbond,]*3, sym2, backend=tb)
         pom = st.einsum('inom,inp->pom', inom, inp)
 
         inom_dense, inp_dense = inom.make_dense(), inp.make_dense()
@@ -81,8 +81,8 @@ class DMRGnpTEST(unittest.TestCase):
         sym1 = ['++--', [ni,nj,nk,nl], None, None]
         sym2 = ['-++--', [nj,nk,nl,nm,nn], None, None]
 
-        ijkl = st.random([nbond,]*4, sym1, tb=tb)
-        jklmn = st.random([nbond,]*5, sym2, tb=tb)
+        ijkl = st.random([nbond,]*4, sym1, backend=tb)
+        jklmn = st.random([nbond,]*5, sym2, backend=tb)
         imn = st.einsum('ijkl,jklmn->imn', ijkl,jklmn)
 
         ijkl_dense, jklmn_dense = ijkl.make_dense(), jklmn.make_dense()
