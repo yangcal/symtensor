@@ -36,10 +36,6 @@ class tensor:
         self.sym = sym
         self._sym = utills._cut_non_sym_sec(sym)
         if sym is None:
-            if slib is None:
-              self.irrep_map_cache = irrep_map_cache(backend)
-            else:
-              self.irrep_map_cache = slib
             self.ndim = self.array.ndim
             self.shape = self.array.shape
         else:
@@ -48,10 +44,15 @@ class tensor:
                 self.shape = self.array.shape[self.nsym-1:]
             else:
                 self.shape = self.array.shape
-            if slib is None:
-                self.irrep_map_cache = irrep_map_cache(backend)
+
+        if slib is None:
+            if backend.name in irrep_map_cache_dict:
+                self.irrep_map_cache = irrep_map_cache_dict[backend.name]
             else:
-                self.irrep_map_cache = slib
+                self.irrep_map_cache = irrep_map_cache(tn)
+                irrep_map_cache_dict[backend.name] = self.irrep_map_cache
+        else:
+            self.irrep_map_cache = slib
 
     def __getattr__(self, item):
         if hasattr(self.array, item):
@@ -157,7 +158,7 @@ class tensor:
             phase : int
                 +1 or - 1, denoting whether terms appear on left-hand side (+1) or right-hand side (-1)
         '''
-        return irrep_map_cache.get_aux_sym_range(self.sym, idx, phase)
+        return get_aux_sym_range(self.sym, idx, phase)
 
     def copy(self):
         return self._as_new_tensor(self.array)
