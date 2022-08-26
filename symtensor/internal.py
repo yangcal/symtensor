@@ -10,13 +10,13 @@ import copy
 import sys
 import numpy as np
 import time
-from symtensor.settings import load_lib
-from symtensor.symlib import *
-from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills, logger
 from symtensor.tools.path import einsum_path
 import symtensor.tensor
+import symtensor.symlib
 import tensorbackends as backends
+
+DUMMY_STRINGS='abcdefghijklmnoprstuvwxyz' #q reserved for auxiliary index
 
 tn = backends.get('numpy')
 irrep_map_cache_dict = {}
@@ -108,7 +108,7 @@ def _einsum(subscripts, *operands):
             symbols = s_A + s_B
             for ki, i in enumerate(symbols.upper()):
                 bond_dict[i] = shape[ki]
-            irrep_map_lst = make_irrep_map_lst(my_irrep_map_cache, op_A._sym, op_B._sym, sym_string_lst) # generate all irrep_maps
+            irrep_map_lst = symtensor.symlib.make_irrep_map_lst(my_irrep_map_cache, op_A._sym, op_B._sym, sym_string_lst) # generate all irrep_maps
             A_path, B_path, main_sym_label, C_path = utills.find_path(sym_string_lst, irrep_map_lst, Nind, bond_dict)
             cput1 = logger.timer_debug(op_A, "finding contraction path", *cput1)
             A = _transform(A, A_path, s_A, lib)

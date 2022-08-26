@@ -11,13 +11,11 @@ import copy
 import sys
 import numpy as np
 import time
-from symtensor.settings import load_lib
 from symtensor.symlib import *
-from symtensor.misc import DUMMY_STRINGS
 from symtensor.tools import utills, logger
 from symtensor.tools.path import einsum_path
-from symtensor.internal import *
 from symtensor.internal import _einsum
+from symtensor.internal import *
 from symtensor.tensor import tensor
 
 import tensorbackends as backends

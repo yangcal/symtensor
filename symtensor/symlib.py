@@ -7,7 +7,7 @@ Routines for generating delta tensors (irrep maps) and an object for caching the
 '''
 
 from symtensor.tools import utills
-from symtensor.misc import DUMMY_STRINGS
+from symtensor.internal import DUMMY_STRINGS
 import itertools
 import numpy as np
 import copy
