@@ -3,6 +3,13 @@
 
 ## Building and Testing
 
+### Requirements
+
+Build-time dependencies of the SymTensor package are:
+
+* NumPy
+* [tensorbackends](https://github.com/cyclops-community/tensorbackends)
+
 The library may be installed into a Python environment from the main source directory via
 ```sh
 pip install .
@@ -17,4 +24,3 @@ FIXME
 may be used.
 
 ## Example Codes
-
