@@ -26,14 +26,27 @@ class tensor:
     array: tensorbackends.interface.Tensor
         Tensor data, represented as numpy array or CuPy/Cyclops object, wrapped as a tensorbackends Tensor. The tensor is order nP+nS-1 where nP is the order of the represented tensor object and nS is the number of modes associated with the symmetry group.
 
-    sym: [string, list(int), int, int]
-        sym[0] is a string of size equal nP indicating whether each mode is nonsymmetric (0), symmetric with positive sign (+), symmetric with negative sign (-)
-        sym[1] defines the 
+    sym: A 4-tuple (``sign_strings``, ``symmetry_sectors``, ``rhs_value``, ``G``):
+                - ``sign_strings`` : A string of "+/-/0" to denote the arithmetic relations between all symmetry sectors. Note character 0 denotes no symmetry for one dimension
+                - ``symmetry_sectors`` : A sequence of symmetry sector each symmetric dimension. The symmetry sector for each symmetric dimension can be:
+                    - A sequence of :class:`int` for 1D Cn or Zn symmetry.
+                    - A sequence of numpy 1D array with same length for higher dimensional product symmetry of Cn or Zn.
+                - ``rhs_value`` :  The net symmetry expected in this tensor. Depending on the type in symmetry sector in `symmetry_sector`, it can be:
+                    - A integer for 1D Cn or Zn symmetry.
+                    - An numpy 1D array for higher dimensional product symmetry of Cn or Zn.
+                    - None for symmetry sectors adding up to 0 or 0 vectors.
+                - ``G`` : The modulo value for the symmetry conservation relation, optional. Depending on the symmetry sector, it can be:
+                    - None for no modulo operation of net symmetry computation.
+                    - An integer for 1D Cn/Zn symmetry
+                    - A sequence of numpy 1D arrays for higher dimensional product symmetry. The length of the sequence should be equal to the length of each 1D array.
+                      Taking (A+B-C-D) mod (G) = rhs as an example. If A/B/C/D/rhs are all integers (1D symmetry), G is expected to be an integer.
+                      If A/B/C/D/rhs are all 3D vector (3D product symmetry). G is expected to be 3 3D vectors [G1, G2, G3] and modulus operation
+                      refers to there existing integers n1, n2, n3 such that A+B-C-D-n1G1-n2G2-n3G3 = rhs. 
 
     """
     def __init__(self, array, sym=None, slib=None, backend=tn):
         self.array = array
-        self.sym = sym
+        self.sym = tuple(sym)
         self._sym = utills._cut_non_sym_sec(sym)
         if sym is None:
             self.ndim = self.array.ndim
@@ -269,4 +282,3 @@ class tensor:
         sparse = self.make_dense()
         self.array = self.backend.einsum(sub, sparse, irrep_map)
         sparse = None
-
