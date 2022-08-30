@@ -3,7 +3,7 @@
 # Author: Yang Gao <younggao1994@gmail.com>
 #
 '''
-Symtensor auxiliary functions
+Symtensor auxiliary interface functions mimiciing numpy functionality, mostly tensor constructors.
 '''
 
 
@@ -30,7 +30,7 @@ def array(arr, sym=None):
     arr: tensor_like
         Input tensor like object
 
-    sym: [string, list(int), int, int]
+    sym: 4-tuple
         Specification of symmetry, refer to main tensor constructor for details
 
     Returns
@@ -50,7 +50,7 @@ def get_full_shape(shape, sym=None):
     shape: list(int)
         Shape of symmetric block
 
-    sym: [string, list(int), int, int]
+    sym: 4-tuple
         Specification of symmetry, refer to main tensor constructor for details
 
     Returns
@@ -80,7 +80,7 @@ def zeros(shape, sym=None, dtype=float, backend=tn):
     shape: list(int)
         Shape of each symmetric tensor block
 
-    sym: [string, list(int), int, int]
+    sym: 4-tuple
         Specification of symmetry, refer to main tensor constructor for details
 
     dtype: type
@@ -119,13 +119,54 @@ def zeros_like(a, dtype=None):
     return zeros(a.shape, a.sym, dtype, a.array.backend)
 
 def random(shape, sym=None, backend=tn):
+    """
+    Create a random symmetric tensor with specified symmetry
+
+    Parameters
+    ----------
+    shape: list(int)
+        Shape of each symmetric tensor block
+
+    sym: 4-tuple
+        Specification of symmetry, refer to main tensor constructor for details
+
+    backend: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
+
+    Returns
+    -------
+    output: tensor
+        A random tensor object with specified symmetry.
+    """
     full_shape = get_full_shape(shape, sym)
     arr = tn.random.random(full_shape)
     tensor = array(arr, sym)
+    tsr_copy = array(arr.copy(), sym)
     tensor.enforce_sym()
     return tensor
 
 def diag(array, sym=None, backend=tn):
+    """
+    Extract a diagonal part of matrix or create diagonal matrix from vector.
+    Intended to act as numpy.diag.
+    FIXME/WARNING: functionality not present for some cases/backends
+
+    Parameters
+    ----------
+    array: tensor-like
+        Tensor object, either backend tensor of data or symtensor
+
+    sym: 4-tuple
+        Specification of symmetry, refer to main tensor constructor for details
+
+    backend: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
+
+    Returns
+    -------
+    output: tensor
+        Symmetric tensor
+    """
     IS_SYMTENSOR = isinstance(array,tensor)
     if IS_SYMTENSOR:
         nsym = array.nsym
@@ -165,6 +206,24 @@ def diag(array, sym=None, backend=tn):
 
 
 def einsum(subscripts, *operands):
+    """
+    Contract symtensor objects according to index strings.
+    Functions as numpy.einsum.
+
+    Parameters
+    ----------
+    subscripts: string
+        Description of contraction indices, with symmetry handled implicitly.
+
+    operands: list of symtensor.tensor objects
+        Symmetric tensors to contract
+
+    Returns
+    -------
+    output: tensor
+        Symmetric tensor
+    """
+
     newsub = copy.copy(subscripts).replace(' ', '')
     if '->' not in newsub:
         newsub += '->'

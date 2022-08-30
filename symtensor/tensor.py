@@ -43,8 +43,10 @@ class tensor:
                       If A/B/C/D/rhs are all 3D vector (3D product symmetry). G is expected to be 3 3D vectors [G1, G2, G3] and modulus operation
                       refers to there existing integers n1, n2, n3 such that A+B-C-D-n1G1-n2G2-n3G3 = rhs. 
 
+    backend: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
     """
-    def __init__(self, array, sym=None, slib=None, backend=tn):
+    def __init__(self, array, sym=None, backend=tn):
         self.array = array
         self.sym = sym
         self._sym = utills._cut_non_sym_sec(sym)
@@ -58,14 +60,11 @@ class tensor:
             else:
                 self.shape = self.array.shape
 
-        if slib is None:
-            if backend.name in irrep_map_cache_dict:
-                self.irrep_map_cache = irrep_map_cache_dict[backend.name]
-            else:
-                self.irrep_map_cache = irrep_map_cache(tn)
-                irrep_map_cache_dict[backend.name] = self.irrep_map_cache
+        if backend.name in irrep_map_cache_dict:
+            self.irrep_map_cache = irrep_map_cache_dict[backend.name]
         else:
-            self.irrep_map_cache = slib
+            self.irrep_map_cache = irrep_map_cache(tn)
+            irrep_map_cache_dict[backend.name] = self.irrep_map_cache
 
     def __getattr__(self, item):
         if hasattr(self.array, item):
@@ -75,10 +74,16 @@ class tensor:
 
     @property
     def backend(self):
+        """
+        Attribute backend: (tensorbackends.backend) tensor array backend to use
+        """
         return self.array.backend
 
     @property
     def nsym(self):
+        """
+        Attribute nsym: (int) number of symmetric indices
+        """
         if self._sym is None:
             return 0
         else:
@@ -86,26 +91,67 @@ class tensor:
 
     @property
     def n0sym(self):
+        """
+        Attribute nsym: (int) number of nonsymmetric indices
+        """
         if self.sym is None:
             return 0
         else:
             return self.sym[0].count('0')
 
     def norm(self):
-        '''compute the Frobenius norm of the tensor'''
+        '''
+        Compute the Frobenius norm of the reduced form of the tensor
+        '''
         return self.backend.norm(self.array)
 
     def get_irrep_map(self, sym=None):
+        '''
+        Obtain a tensor representation of the symmetry, the tensor being of order equal to self.nsym
+
+        Parameters:
+        -----------
+            sym: 4-tuple
+                What symmetry to compute the irrep map for, if None, self.sym is used
+
+        Returns
+        -------
+        output: tensorbackends.interface.Tensor
+            Tensor representing symmetry.
+        '''
         if sym is None: sym=self.sym
         return self.irrep_map_cache.get_irrep_map(sym)
 
     def _as_new_tensor(self, x):
-        newtensor = tensor(x, self.sym, backend=self.array.backend, \
-                          slib=self.irrep_map_cache)
+        '''
+        Create a tensor with this symmetry and given data
+
+        Parameters:
+        -----------
+            x: tensor-like
+                Tensor data, generally should be tensorbackends.interface.Tensor object
+
+        Returns
+        -------
+        output: symtensor
+            New tensor with given data and this tensor's sym
+        '''
+        newtensor = tensor(x, self.sym, backend=self.array.backend)
         return newtensor
 
     def transpose(self, *axes):
-        '''transposing the tensor with specified order'''
+        '''
+        Transpose the tensor with specified order.
+
+        Parameters:
+        -----------
+            axes: int list
+                New order of modes for this tensor.
+        Returns
+        -------
+        output: symtensor
+            Transposed symmetric tensor object.
+        '''
         ndim = self.ndim
         assert (len(axes)==ndim), "number of axes does not match the number of symmetry sector"
         if self.sym is None:
@@ -133,19 +179,39 @@ class tensor:
                 sub = sinput + ',' + sa_.upper() + '->' + soutput
                 temp = self.backend.einsum(sub, self.array, irrep_map)
             new_sym = [sign_strings, new_symrange, self.sym[2], self.sym[3]]
-        return tensor(temp, new_sym, self.irrep_map_cache, backend=backend)
+        return tensor(temp, new_sym, backend=backend)
 
     def ravel(self):
+        '''
+        Return tensor data as 1D array
+
+        Returns
+        -------
+        output: Tensorbackends.interface.Tensor
+            1D tensor with unique stored tensor data.
+        '''
         return self.array.ravel()
 
     def diagonal(self, preserve_shape=False):
-        '''get the diagonal component for tensor with two symmetry sectors, if preserve_shape, will return the matrix with diagonal components'''
+        '''
+        Get the diagonal component for tensor with two symmetry sectors, if preserve_shape, will return the matrix with diagonal components
+
+        Parameters:
+        -----------
+            preserve_shape: bool
+                Whether to return tensor or matrix
+
+        Returns
+        -------
+        output: symtensor.tensor
+            Symmetric tensor with same shape or reduced shape compared to this tensor, containing only its diagonal part.
+        '''
         if self.n0sym != 0:
             raise NotImplementedError("diagonal not well defined with non-symmetric sector")
         lib = self.backend
         if self.ndim == self.array.ndim:
             if preserve_shape:
-                return tensor(lib.diag(lib.diag(self.array)), self.sym, self.irrep_map_cache, backend=self.array.backend)
+                return tensor(lib.diag(lib.diag(self.array)), self.sym, backend=self.array.backend)
             else:
                 return lib.diag(self.array)
         elif self.ndim ==2 and self.shape[-1]==self.shape[-2]:
@@ -256,9 +322,27 @@ class tensor:
         self.array[key] = value
 
     def put(self, idx, val):
+        """
+        Put set of values into specified locations in reduced form tensor.
+
+        Parameters:
+        -----------
+            idx: list of tensor element indices
+                Locations of tensor elements to update.
+            val:
+                Values with which to update tensor.
+        """
         self.backend.put(self.array, idx, val)
 
     def make_dense(self):
+        '''
+        Get a representation of the full tensor, with symmetric entries stored redundantly.
+
+        Returns
+        -------
+        output: tensorbackends.Interface.tensor
+            Tensor implicitly represented by this symtensor object. Twice the order of this tensor.
+        '''
         if self.sym is None: return self.array
         irrep_map  = self.irrep_map_cache.get_irrep_map(self.sym)
         ndim  = self.ndim
@@ -271,6 +355,10 @@ class tensor:
         return array
 
     def enforce_sym(self):
+        '''
+        Zero-out entries in the reduced representation of the tensor that do not adhere to symmetry. Used to create random tensors with specified symmetry.
+        FIXME: This should not be necessary for basic symmetries, better documentation needed for complex symmetries.
+        '''
         if self.sym is None: return self
         irrep_map  = self.irrep_map_cache.get_irrep_map(self.sym)
         ndim  = self.ndim

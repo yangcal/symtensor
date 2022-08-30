@@ -22,6 +22,9 @@ tn = backends.get('numpy')
 irrep_map_cache_dict = {}
 
 def infer_backend(A):
+    """
+    Infer backend of a tensor
+    """
     if isinstance(A,symtensor.tensor):
         return A.array.backend
     elif isinstance(A,np.ndarray):
@@ -34,6 +37,9 @@ def infer_backend(A):
 
 
 def _transform(Aarray, path, orb_label, backend):
+    """
+    Apply irrep map to tensor to align for contraction
+    """
     nop = len(path)
     if nop == 0: return Aarray
     for ki, (sym_label, irrep_map) in enumerate(path):
@@ -42,6 +48,9 @@ def _transform(Aarray, path, orb_label, backend):
     return Aarray
 
 def _einsum(subscripts, *operands):
+    """
+    Perform 2-tensor contraction of symtensors by aligning symmetries via transformng the irreps
+    """
     if len(operands)==1:
         op_A = operands[0]
     else:
