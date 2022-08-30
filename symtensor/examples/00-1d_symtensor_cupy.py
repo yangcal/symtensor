@@ -7,7 +7,11 @@ Simple tensor contraction with 1D symmetry
 '''
 
 import numpy as np
-from symtensor.cupy import array, einsum
+import symtensor as st
+import ctf
+import tensorbackends as tbs
+
+tc = tbs.get("cupy")
 
 ni = np.arange(0,3)
 nj = np.arange(0,4)
@@ -22,6 +26,6 @@ sym_klm = ['++-', [nk,nl,nm], None, None] # K + L - M = 0
 ijk_array = np.random.random([len(ni),len(nj),nbond,nbond,nbond])
 klm_array = np.random.random([len(nk),len(nl),nbond,nbond,nbond])
 
-ijk = array(ijk_array, sym_ijk, verbose=1)
-klm = array(klm_array, sym_klm, verbose=1)
+ijk = array(ijk_array, sym_ijk, backend=tc)
+klm = array(klm_array, sym_klm, backend=tc)
 ijlm = einsum('ijk,klm->ijlm',ijk,klm)

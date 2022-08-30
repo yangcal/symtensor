@@ -27,8 +27,8 @@ nm = np.arange(0,5)
 nbond = 50
 sym1 = ['++-', [ni,nj,nk], None, None]
 sym2 = ['++-', [nk,nl,nm], None, None]
-ijk = random.random([nbond,]*3, sym1, verbose=2)
-klm = random.random([nbond,]*3, sym2, verbose=2)
+ijk = random.random([nbond,]*3, sym1)
+klm = random.random([nbond,]*3, sym2)
 ijlm = einsum('ijk,klm->ijlm',ijk,klm)
 
 
@@ -38,6 +38,6 @@ sys.stdout = open("output_rank%i.dat"%rank, "w")
 nbond = 30
 sym1 = ['++-', [ni,nj,nk], None, None]
 sym2 = ['++-', [nk,nl,nm], None, None]
-ijk = random.random([nbond,]*3, sym1, verbose=2)
-klm = random.random([nbond,]*3, sym2, verbose=2)
+ijk = random.random([nbond,]*3, sym1)
+klm = random.random([nbond,]*3, sym2)
 ijlm = einsum('ijk,klm->ijlm',ijk,klm)

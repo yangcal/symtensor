@@ -37,6 +37,6 @@ sym = ['++--', [kpts,]*4, None, gvec]
 
 Aarray = np.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
 Barray = np.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
-A = array(Aarray, sym, verbose=1)
-B = array(Barray, sym, verbose=1)
+A = array(Aarray, sym)
+B = array(Barray, sym)
 out = einsum('ijab,abcd->ijcd', A, B)

@@ -70,7 +70,7 @@ class tensor:
             else:
                 self.array = backend.tensor(array)
         else:
-            self.array = backend.array(array)
+            self.array = backend.tensor(array)
         self.sym = sym
         self._sym = utills._cut_non_sym_sec(sym)
         if sym is None:
@@ -354,7 +354,7 @@ class tensor:
             val:
                 Values with which to update tensor.
         """
-        self.backend.put(self.array, idx, val)
+        self.array.put(idx, val)
 
     def make_dense(self):
         '''

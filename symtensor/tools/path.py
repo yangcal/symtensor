@@ -1,5 +1,6 @@
 from __future__ import division, absolute_import, print_function
 from numpy.core.einsumfunc import _compute_size_by_dict, _greedy_path, _find_contraction, _optimal_path
+import symtensor
 
 einsum_symbols = 'abcdefghijklmnoprstuvwxyzABCDEFGHIJKLMNOPRSTUVWXYZ'
 einsum_symbols_set = set(einsum_symbols)
@@ -126,7 +127,7 @@ def einsum_path(subscript, *operands):
                          "number of operands.")
     fakeoperands = []
     for v in operands:
-        if hasattr(v, "array"):
+        if isinstance(v, symtensor.tensor):
             fakeoperands.append(Fakearray(v.shape, v.sym))
         else:
             fakeoperands.append(Fakearray(v.shape, None))

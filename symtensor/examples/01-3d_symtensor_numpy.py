@@ -3,10 +3,10 @@
 # Author: Yang Gao <younggao1994@gmail.com>
 #
 '''
-Simple tensor contraction with 3D symmetry
+Simple st.tensor contraction with 3D symmetry
 '''
 import numpy as np
-from symtensor import array, einsum
+import symtensor as st
 
 def make_kpts(lattice, nmp):
     ks_each_axis = []
@@ -37,6 +37,6 @@ sym = ['++--', [kpts,]*4, None, gvec]
 
 Aarray = np.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
 Barray = np.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
-A = array(Aarray, sym, verbose=1)
-B = array(Barray, sym, verbose=1)
-out = einsum('ijab,abcd->ijcd', A, B)
+A = st.array(Aarray, sym)
+B = st.array(Barray, sym)
+out = st.einsum('ijab,abcd->ijcd', A, B)

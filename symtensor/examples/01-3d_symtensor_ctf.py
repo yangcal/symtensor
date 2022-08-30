@@ -3,12 +3,15 @@
 # Author: Yang Gao <younggao1994@gmail.com>
 #
 '''
-Simple array( contraction with 3D symmetry
+Simple st.array( contraction with 3D symmetry
 usage: mpirun -np 2 python 01-3d_symarray(_ctf.py
 '''
 import numpy as np
-from symtensor.ctf import array, einsum
 import ctf
+import tensorbackends as tbs
+import symtensor as st
+
+tc = tbs.get("ctf")
 
 def make_kpts(lattice, nmp):
     ks_each_axis = []
@@ -40,6 +43,6 @@ sym = ['++--', [kpts,]*4, None, gvec]
 
 Aarray = ctf.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
 Barray = ctf.random.random([nkpts,nkpts,nkpts,nmo,nmo,nmo,nmo])
-A = array(Aarray, sym, verbose=1)
-B = array(Barray, sym, verbose=1)
-out = einsum('ijab,abcd->ijcd', A, B)
+A = st.array(Aarray, sym, backend=tc)
+B = st.array(Barray, sym, backend=tc)
+out = st.einsum('ijab,abcd->ijcd', A, B)

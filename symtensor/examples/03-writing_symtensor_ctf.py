@@ -1,16 +1,19 @@
 import numpy
 import ctf
-from symtensor.ctf import array, fromfunction
+import symtensor as st
+import tensorbackends as tbs
+
+tc = tbs.get("ctf")
 
 # Case 1. input tensor already stored
 a = ctf.random.random([2,3,3])
 sym = ["+-", [[0,1]]*2, None, 2]
 # initalizing by feeding numpy array
-symarray = array(a, sym)
+symarray = st.array(a, sym, backend=tc)
 
-# Case 2. fromfunction to initialize a symtensor object
+# Case 2. st.fromfunction to initialize a symtensor object
 #------------ Non-symmetric tensors-----------
-# fromfunction is a wrapper for numpy.fromfunction
+# st.fromfunction is a wrapper for numpy.st.fromfunction
 # returned symtensor object has symtensor.array[i,j] = func(i,j,**kwargs)
 
 sym = None
@@ -18,10 +21,10 @@ def per_element(i,j):
     return i+j
 
 shape = (4,4)
-symarray = fromfunction(per_element, shape, sym=None)
+symarray = st.fromfunction(per_element, shape, sym=None, backend=tc)
 
 #------------ Symmetric tensors-----------
-# fromfunction takes a function that generates the numpy tensor block
+# st.fromfunction takes a function that generates the numpy tensor block
 # from the first N-1 symmetry indices
 # the returned symtensor object has symtensor.array[I,J,K] = func(I,J,K,**kwargs)
 
@@ -37,4 +40,4 @@ def per_sym_block(I,J,K):
 sym = ["++--", [numpy.arange(G)]*4, None, G]
 shape = (nbond,nbond,nbond,nbond)
 
-symarray = fromfunction(per_sym_block, shape, sym=sym)
+symarray = st.fromfunction(per_sym_block, shape, sym=sym, backend=tc)
