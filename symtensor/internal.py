@@ -90,7 +90,8 @@ def _einsum(subscripts, *operands):
             # modulus needs to the same for the two operands
             assert(np.allclose(op_A.sym[3], op_B.sym[3]))
 
-        my_irrep_map_cache = op_A.irrep_map_cache + op_B.irrep_map_cache
+        assert(op_A.irrep_map_cache is op_B.irrep_map_cache)
+        my_irrep_map_cache = op_A.irrep_map_cache
 
         if 'q' in subscripts.lower():
             raise ValueError("q index is reserved for auxillary index, please change the symmetry label in einsum subscript")

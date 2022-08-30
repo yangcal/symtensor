@@ -10,6 +10,7 @@ else:
 import numpy as np
 import time
 import itertools
+import symtensor as st
 
 def get_kconserv(lattice, kpts):
     nkpts = kpts.shape[0]
@@ -35,16 +36,14 @@ def test_numpy_block(nmo,kconserv):
     return t1 - t0
 
 def test_sym_numpy(nmo,sym):
-    from symtensor.sym import random,einsum
-    w = random([nmo,]*4, sym=sym)
+    w = st.random([nmo,]*4, sym=sym)
     t0 = time.time()
-    out = einsum('ijab,abcd->ijcd',w,w)
+    out = st.einsum('ijab,abcd->ijcd',w,w)
     t1 = time.time()
     return t1-t0
 
 def test_numpy_sparse(nmo,sym):
-    from symtensor.sym import random
-    w = random([nmo,]*4, sym=sym)
+    w = st.random([nmo,]*4, sym=sym)
     w = w.make_sparse()
     t0 = time.time()
     out = np.einsum('IJABijab,ABCDabcd->IJCDijcd',w,w, optimize=True)

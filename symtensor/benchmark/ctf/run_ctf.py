@@ -1,21 +1,26 @@
 import numpy as np
-from symtensor.backend.ctf_funclib import rank, size
 import ctf
 import time
+import symtensor as st
+import tensorbackends as tbs
+
+tc = tbs.get("ctf")
+
+cm = ctf.comm()
+rank = cm.rank()
+size = cm.np()
 
 def test_sym_ctf(nmo,sym):
-    from symtensor.sym_ctf import tensor, einsum
     nk = len(sym[1][0])
-    warray = ctf.random.random([nk,nk,nk,nmo,nmo,nmo,nmo])
-    w = tensor(warray, sym)
+    warray = tc.random.random([nk,nk,nk,nmo,nmo,nmo,nmo])
+    w = st.tensor(warray, sym)
     t0 = time.time()
-    out = einsum('ijab,abcd->ijcd',w,w)
+    out = st.einsum('ijab,abcd->ijcd',w,w)
     t1 = time.time()
     return t1-t0
 
 def test_ctf_sparse(nmo,sym):
-    from symtensor.sym_ctf import random
-    w = random([nmo,]*4, sym=sym)
+    w = st.random([nmo,]*4, sym=sym, backend=tc)
     w = w.make_sparse()
     t0 = time.time()
     out = ctf.einsum('IJABijab,ABCDabcd->IJCDijcd',w,w)

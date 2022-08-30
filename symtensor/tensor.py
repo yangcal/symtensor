@@ -42,12 +42,35 @@ class tensor:
                       Taking (A+B-C-D) mod (G) = rhs as an example. If A/B/C/D/rhs are all integers (1D symmetry), G is expected to be an integer.
                       If A/B/C/D/rhs are all 3D vector (3D product symmetry). G is expected to be 3 3D vectors [G1, G2, G3] and modulus operation
                       refers to there existing integers n1, n2, n3 such that A+B-C-D-n1G1-n2G2-n3G3 = rhs. 
-
-    backend: tensorbackends.backend
-        Tensor array backend to use (numpy by default, can be CTF or CuPy)
     """
-    def __init__(self, array, sym=None, backend=tn):
-        self.array = array
+
+    """
+    Symmetric tensor constructor
+
+    Parameters
+    ----------
+    array: tensor-like
+        Tensor data, can be tensorbackends.interface.Tensor object or plain array, should be compatible with specified backend if any
+
+    sym: 4-tuple (optional)
+        Description of symmetry, detailed specification in description of tensor
+    
+    backend: tensorbackends.backend (optional)
+        Tensor array backend to use (numpy by default, can be CTF or CuPy), inferred from array
+    """
+    def __init__(self, array, sym=None, backend=None):
+        if backend is None:
+            if isinstance(array,backends.interface.Tensor):
+                backend = array.backend
+            else:
+                backend = tn
+        if isinstance(array,backends.interface.Tensor):
+            if backend == array.backend:
+                self.array = array
+            else:
+                self.array = backend.tensor(array)
+        else:
+            self.array = backend.array(array)
         self.sym = sym
         self._sym = utills._cut_non_sym_sec(sym)
         if sym is None:
@@ -59,11 +82,10 @@ class tensor:
                 self.shape = self.array.shape[self.nsym-1:]
             else:
                 self.shape = self.array.shape
-
         if backend.name in irrep_map_cache_dict:
             self.irrep_map_cache = irrep_map_cache_dict[backend.name]
         else:
-            self.irrep_map_cache = irrep_map_cache(tn)
+            self.irrep_map_cache = irrep_map_cache(backend)
             irrep_map_cache_dict[backend.name] = self.irrep_map_cache
 
     def __getattr__(self, item):

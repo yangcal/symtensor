@@ -11,6 +11,7 @@ from symtensor.internal import DUMMY_STRINGS
 import itertools
 import numpy as np
 import copy
+import tensorbackends as backends
 #tolerance for equivalence checks
 SYM_TOL=1e-6
 #map from symmetry signs to ints
@@ -71,9 +72,9 @@ def sym_to_irrep_map(sym, backend):
         fill = np.ones(len(idx))
         shape = [len(i) for i in sym_range]
 
-        backend.put(delta, idx, fill)
+        delta.put(idx, fill)
     else:
-        backend.put(delta, [], [])
+        delta.put([], [])
     return delta
 
 
@@ -202,20 +203,6 @@ def check_sym_equal(sym1, sym2):
     else:
         return (EQUAL, None)
 
-def fuse_symbackend(symbackend1, symbackend2):
-    """ combine two irrep map caches """
-    if symbackend1 is None:
-        return symbackend2
-    elif symbackend2 is None:
-        return symbackend1
-    fused_backend = symbackend1.copy()
-    for ki, i in enumerate(symbackend2.sym_lst):
-        SYM_INCLUDED = [check_sym_equal(symi, i)[0] for symi in symbackend1.sym_lst]
-        if not any(SYM_INCLUDED):
-            fused_backend.sym_lst.append(i)
-            fused_backend.irrep_map_lst.append(symbackend2.irrep_map_lst[ki])
-    return fused_backend
-
 def make_irrep_map_lst(symbackend, sym1, sym2, sym_string_lst):
     """ create list of irrep map objects given list of symmetries """
     sym1_ = utills._cut_non_sym_sec(sym1)
@@ -281,15 +268,15 @@ def fuse_delta(delta_lst, backend):
 
 def _fuse_delta(sub, delta_a, delta_b, backend):
     """Generate a new delta tensor by tensor contraction between two input delta tensors a and b"""
-    temp = backend.einsum(sub, delta_a, delta_b)
-    idx = backend.nonzero(temp.ravel())
+    temp = backend.einsum(sub, delta_a, delta_b).numpy()
+    idx = np.flatnonzero(temp.ravel())
     delta = backend.zeros(temp.shape)
     fill = np.ones(len(idx))
     rank = getattr(backend, "rank", 0)
     if rank==0:
-        backend.put(delta, idx, fill)
+        delta.put(idx, fill)
     else:
-        backend.put(delta, [], [])
+        delta.put([], [])
     return delta
 
 
@@ -350,21 +337,6 @@ class irrep_map_cache:
             self.sym_lst.append(sym_)
             irrep_map = sym_to_irrep_map(sym_, self.backend)
             self.irrep_map_lst.append(irrep_map)
-
-    """
-    Merge with another irrep map cache
-
-    Parameters
-    ----------
-    symbackend2: irrep_map_cache
-        Another cache to merge with
-
-    Returns
-    ----------
-    new irrep_map_cache object containing irrep maps in this cache and the given cache
-    """
-    def __add__(self, symbackend2):
-        return fuse_symbackend(self, symbackend2)
 
     """
     Get irrep map object for a symmetry
