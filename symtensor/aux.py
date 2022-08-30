@@ -263,19 +263,32 @@ def einsum(subscripts, *operands):
         del tmp_operands, new_view
     return operands[0]
 
-
-def static_partition(tasks,backend):
-    assert(backend.name == 'ctf')
-    comm = backend.comm()
-    rank = comm.rank()
-    size = comm.np()
-    segsize = (len(tasks)+size-1) // size
-    start = rank * segsize
-    stop = min(len(tasks), start+segsize)
-    ntasks = min(len(tasks),segsize)
-    return tasks[start:stop], ntasks
-
 def fromfunction(func, shape, sym=None, dtype=float, backend=tn, **kwargs):
+    """
+    Construct a tensor from an elementwise function
+
+    Parameters
+    ----------
+    func: function
+        elementwise function to construct tensor with
+
+    shape: list(int)
+        Shape of symmetric block
+
+    sym: 4-tuple
+        Specification of symmetry, refer to main tensor constructor for details
+
+    dtype: type
+        Specification of tensor element type
+
+    backend: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
+
+    Returns
+    -------
+    output: tensor
+        tensor generated from elementwise function
+    """
     out = zeros(shape, sym, dtype=dtype, backend=backend)
     nsym = out.nsym
     if backend.name == 'ctf':
@@ -314,6 +327,40 @@ def fromfunction(func, shape, sym=None, dtype=float, backend=tn, **kwargs):
     return out
 
 def frombatchfunc(func, shape, all_tasks, nout=1, out=None, sym=None, dtype=float, backend=tn, **kwargs):
+    """
+    Construct a set of tensor elements from an elementwise function and store in one or more tensors
+
+    Parameters
+    ----------
+    func: function
+        elementwise function to construct tensor with
+
+    shape: list(int)
+        Shape of symmetric block
+
+    all_tasks: list(list(int)) or list((int,list(int)))
+        Set of tensor indices to apply function on (if nout>1, of second type, including which ouput to apply indices on)
+
+    nout: number of outputs
+        Number of output tensors to create
+
+    out: output tensors
+        Output tensors to write to
+
+    sym: 4-tuple
+        Specification of symmetry, refer to main tensor constructor for details
+
+    dtype: type
+        Specification of tensor element type
+
+    backend: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
+
+    Returns
+    -------
+    output: tensor or tensors
+        tensor or tenrsors generated from elementwise function if out is None
+    """
     if isinstance(shape[0], list) or isinstance(shape[0], tuple):
         shape_list = shape
         nout = len(shape)

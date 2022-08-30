@@ -139,3 +139,32 @@ def _einsum(subscripts, *operands):
             return C
 
 
+def static_partition(tasks,backend):
+    """
+    Partition a set of tasks among MPI processes
+
+    Parameters
+    ----------
+    tasks: integer
+        Number of tasks to partition
+
+    backend: tensorbackends.backend
+        Tensor array backend, should be CTF only here
+
+    Returns
+    -------
+    output: (list, int)
+        list of tasks boundaries and max number of tasks
+
+    """
+    assert(backend.name == 'ctf')
+    comm = backend.comm()
+    rank = comm.rank()
+    size = comm.np()
+    segsize = (len(tasks)+size-1) // size
+    start = rank * segsize
+    stop = min(len(tasks), start+segsize)
+    ntasks = min(len(tasks),segsize)
+    return tasks[start:stop], ntasks
+
+
