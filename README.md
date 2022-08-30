@@ -14,7 +14,7 @@ SymTensor relies on the [tensorbackends](https://github.com/cyclops-community/te
 
 ### Building
 
-SymTensor can be used with Cyclops to achieve distributed parallelism, but tensorbackends and SymTensor can be built without Cyclops.
+SymTensor can be used with Cyclops to achieve distributed parallelism and CuPy for GPU acceleration, but tensorbackends and SymTensor can be built without either Cyclops or CuPy.
 
 The library may be installed into a Python environment from the main source directory via
 ```sh
@@ -31,15 +31,6 @@ python ./symtensor/test/test_nonsym.py;
 python ./symtensor/test/test_pbc.py;
 python ./symtensor/test/test_dmrg.py;
 python ./symtensor/test/test_multi_operands.py;
-
-To test the library
-
-SymTensor may be used with NumPy, cuPy, or [Cyclops Tensor Framework](https://github.com/cyclops-community/ctf) as a backend.
-To import a given backend into symtensor the command
-```sh
-FIXME
-```
-may be used.
 
 ## Example Codes
 
