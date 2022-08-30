@@ -30,7 +30,8 @@ These may be executed as
 python ./symtensor/test/test_nonsym.py;
 python ./symtensor/test/test_pbc.py;
 python ./symtensor/test/test_dmrg.py;
-python ./symtensor/test/test_multi_operands.py;
+python ./symtensor/test/test_multi_operands.py
+```
 
 ## Example Codes
 
