@@ -3,7 +3,7 @@
 # Author: Yang Gao <younggao1994@gmail.com>
 #
 '''
-Routines for generating delta tensors (irrep maps) and an object for caching them
+Internal routines for generating delta tensors (irrep maps) and an object for caching them.
 '''
 
 from symtensor.tools import utills
@@ -16,19 +16,22 @@ SYM_TOL=1e-6
 #map from symmetry signs to ints
 sign = {'+':1,'-':-1}
 
-"""
-Get irrep map object for a symmetry
-
-Parameters
-----------
-sym: [string, list(int), int, int]
-    Symmetry to represent as irrep map, refer to main tensor constructor for specification
-
-Returns
-----------
-tensor representing symmetry
-"""
 def sym_to_irrep_map(sym, backend):
+    """
+    Get irrep map object for a symmetry
+    
+    Parameters
+    ----------
+    sym: 4-tuple
+        Symmetry to represent as irrep map, refer to main tensor constructor for specification
+
+    backend: tensorbackends.backend
+        Tensor array backend to use (numpy by default, can be CTF or CuPy)
+
+    Returns
+    ----------
+    tensor representing symmetry
+    """
     rank = getattr(backend, "rank", 0)
     sign_string, sym_range, rhs, modulus = utills._cut_non_sym_sec(sym)
     shape = [len(i) for i in sym_range]
@@ -150,6 +153,7 @@ def merge_sym_range(range_A, range_B, modulus1=None, modulus2=None):
         return _merge_sym_range(range_A, rB)
 
 def _merge_sym_range(range_A, range_B):
+    """ merge two symmetry ranges """
     delta = abs(np.asarray(range_A)[:,None]-np.asarray(range_B)[None:])
     if delta.ndim !=2:
         delta = np.sum(delta, axis=2)
@@ -158,6 +162,7 @@ def _merge_sym_range(range_A, range_B):
     return merged_range
 
 def check_sym_equal(sym1, sym2):
+    """ check if two symmetries are identiceal """
     sign_string1, sym_range1, rhs1, modulus1 = utills._cut_non_sym_sec(sym1)
     sign_string2, sym_range2, rhs2, modulus2 = utills._cut_non_sym_sec(sym2)
     if rhs1 is None: rhs1 = 0
@@ -198,6 +203,7 @@ def check_sym_equal(sym1, sym2):
         return (EQUAL, None)
 
 def fuse_symbackend(symbackend1, symbackend2):
+    """ combine two irrep map caches """
     if symbackend1 is None:
         return symbackend2
     elif symbackend2 is None:
@@ -211,6 +217,7 @@ def fuse_symbackend(symbackend1, symbackend2):
     return fused_backend
 
 def make_irrep_map_lst(symbackend, sym1, sym2, sym_string_lst):
+    """ create list of irrep map objects given list of symmetries """
     sym1_ = utills._cut_non_sym_sec(sym1)
     sym2_ = utills._cut_non_sym_sec(sym2)
     sign_string1, sym_range1, rhs1, modulus1 = sym1_
