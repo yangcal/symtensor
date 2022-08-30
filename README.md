@@ -1,4 +1,4 @@
-## SymTensor: An Efficient Abstraction for Group-Symmteric Tensor Contractions
+## SymTensor: An Efficient Abstraction for Group-Symmetric Tensor Contractions
 
 
 ## Building and Testing

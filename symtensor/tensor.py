@@ -32,11 +32,11 @@ class tensor:
                     - A sequence of :class:`int` for 1D Cn or Zn symmetry.
                     - A sequence of numpy 1D array with same length for higher dimensional product symmetry of Cn or Zn.
                 - ``rhs_value`` :  The net symmetry expected in this tensor. Depending on the type in symmetry sector in `symmetry_sector`, it can be:
-                    - A integer for 1D Cn or Zn symmetry.
-                    - An numpy 1D array for higher dimensional product symmetry of Cn or Zn.
-                    - None for symmetry sectors adding up to 0 or 0 vectors.
+                    - An integer for 1D Cn or Zn symmetry.
+                    - A numpy 1D array for higher dimensional product symmetry of Cn or Zn.
+                    - `None` for symmetry sectors adding up to 0 or 0 vectors.
                 - ``G`` : The modulo value for the symmetry conservation relation, optional. Depending on the symmetry sector, it can be:
-                    - None for no modulo operation of net symmetry computation.
+                    - `None` for no modulo operation of net symmetry computation.
                     - An integer for 1D Cn/Zn symmetry
                     - A sequence of numpy 1D arrays for higher dimensional product symmetry. The length of the sequence should be equal to the length of each 1D array.
                       Taking (A+B-C-D) mod (G) = rhs as an example. If A/B/C/D/rhs are all integers (1D symmetry), G is expected to be an integer.
