@@ -46,7 +46,7 @@ class tensor:
     """
     def __init__(self, array, sym=None, slib=None, backend=tn):
         self.array = array
-        self.sym = tuple(sym)
+        self.sym = sym
         self._sym = utills._cut_non_sym_sec(sym)
         if sym is None:
             self.ndim = self.array.ndim
