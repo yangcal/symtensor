@@ -10,11 +10,7 @@ Complete documentation of software funcationality is generated via Sphinx and av
 
 ### Requirements
 
-SymTensor relies on the tensorbackends package
-
-* [tensorbackends](https://github.com/cyclops-community/tensorbackends)
-
-which in turn requires NumPy and SciPy.
+SymTensor relies on the [tensorbackends](https://github.com/cyclops-community/tensorbackends) package, which in turn requires NumPy and SciPy.
 
 ### Building
 
