@@ -2,6 +2,10 @@
 
 SymTensor aims to automate management of group symmetries in tensor contractions. With the assumption that each symmetry block is the same size, SymTensor leverages a high-order dense tensor representation of the unique (up to symmetry) tensor elements. Each contraction is performed by first contracting small tensors that represent the symmetry group, transforming the operands, and performing a single dense tensor contraction once indices are aligned. The algorithm is described in the reference at the end of this README page.
 
+## Documentation
+
+Complete documentation of software funcationality is generated via Sphinx and available [here](https://solomonik.cs.illinois.edu/symtensor/).
+
 ## Building and Testing
 
 ### Requirements
